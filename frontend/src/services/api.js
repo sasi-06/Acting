@@ -108,6 +108,6 @@ export const adminAPI = {
 };
 
 export const registerUser = (data) =>
-  axios.post('http://127.0.0.1:5001/api/users/register', data);
+  axios.post('http://127.0.0.1:5001/api/user/register', data);
 
 export default api;

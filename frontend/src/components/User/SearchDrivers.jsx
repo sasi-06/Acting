@@ -79,7 +79,7 @@ function SearchDrivers({ user, showNotification }) {
       <div className="search-form">
         <input
           type="text"
-          placeholder="Enter your location"
+          placeholder="Enter your city location"
           value={searchLocation}
           onChange={(e) => setSearchLocation(e.target.value)}
         />

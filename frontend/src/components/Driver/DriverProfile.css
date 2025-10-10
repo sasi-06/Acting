@@ -620,4 +620,35 @@
             min-width: auto;
           }
         }
+        .form-control {
+          width: 100%;
+          padding: 15px;
+          background: rgba(255, 255, 255, 0.9);
+          border-radius: 10px;
+          border: 2px solid rgba(102, 126, 234, 0.2);
+          color: #333;
+          font-weight: 500;
+          font-size: 1rem;
+          transition: all 0.3s ease;
+          box-sizing: border-box;
+        }
+
+        .form-control:focus {
+          outline: none;
+          border-color: #667eea;
+          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-control.error {
+          border-color: #dc3545;
+        }
+
+        .form-display {
+          padding: 15px;
+          background: rgba(102, 126, 234, 0.05);
+          border-radius: 10px;
+          border: 2px solid rgba(102, 126, 234, 0.1);
+          color: #333;
+          font-weight: 500;
+        }
       

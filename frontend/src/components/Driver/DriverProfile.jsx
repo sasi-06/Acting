@@ -74,7 +74,7 @@ const DriverProfile = ({ user, setUser, showNotification }) => {
       },
       {
         id: 2,
-        customerName: 'Priya Sharma',
+        customerName: 'Hariharan',
         rating: 4,
         comment: 'Good driver, reached on time. Smooth journey overall.',
         date: '2025-08-25',
@@ -82,7 +82,7 @@ const DriverProfile = ({ user, setUser, showNotification }) => {
       },
       {
         id: 3,
-        customerName: 'Arjun Reddy',
+        customerName: 'Jagathish',
         rating: 5,
         comment: 'Outstanding service! Will definitely book again.',
         date: '2025-08-20',

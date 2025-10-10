@@ -4,27 +4,27 @@ function UserBookings({ user, showNotification }) {
   const bookings = [
     {
       id: 1,
-      driver: 'John Driver',
-      pickup: 'Downtown Mall',
-      drop: 'Airport',
+      driver: 'Ganesh',
+      pickup: ' Chennai Downtown Mall',
+      drop: ' Chennai Airport',
       date: '2024-01-15',
       time: '10:00 AM',
       status: 'Confirmed'
     },
     {
       id: 2,
-      driver: 'Sarah Wilson',
-      pickup: 'Home',
-      drop: 'Office',
+      driver: 'Sasisivaprakash M',
+      pickup: 'Trichy',
+      drop: 'Kovilpatti',
       date: '2024-01-16',
       time: '8:30 AM',
       status: 'Pending'
     },
     {
       id: 3,
-      driver: 'Mike Johnson',
-      pickup: 'Hospital',
-      drop: 'Home',
+      driver: 'Subash',
+      pickup: 'Thoothukudi',
+      drop: 'Chennai',
       date: '2024-01-14',
       time: '6:00 PM',
       status: 'Completed'

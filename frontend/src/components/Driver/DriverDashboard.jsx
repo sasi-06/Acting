@@ -137,29 +137,35 @@ const DriverDashboard = ({ user, showNotification }) => {
   };
 
   const handleBookingAction = async (bookingId, action) => {
-    setLoading(true);
+  setLoading(true);
+  
+  try {
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setRecentBookings(prev => 
-        prev.map(booking => 
-          booking.id === bookingId 
-            ? { ...booking, status: action === 'accept' ? 'Confirmed' : 'Rejected' }
-            : booking
-        )
-      );
-      
-      showNotification(
-        `Booking ${action === 'accept' ? 'accepted' : 'rejected'} successfully`,
-        'success'
-      );
-    } catch (error) {
-      showNotification('Action failed. Please try again.', 'error');
+    // Update booking status
+    setRecentBookings(prev => 
+      prev.map(booking => 
+        booking.id === bookingId 
+          ? { ...booking, status: action === 'accept' ? 'Confirmed' : 'Rejected' }
+          : booking
+      )
+    );
+    
+    // Automatically change driver status to "Not Available" when accepting
+    if (action === 'accept') {
+      setAvailability('Not Available');
     }
     
-    setLoading(false);
-  };
+    showNotification(
+      `Booking ${action === 'accept' ? 'accepted' : 'rejected'} successfully`,
+      'success'
+    );
+  } catch (error) {
+    showNotification('Action failed. Please try again.', 'error');
+  }
+  
+  setLoading(false);
+};
 
   const markNotificationRead = (notificationId) => {
     setNotifications(prev =>
@@ -186,7 +192,7 @@ const DriverDashboard = ({ user, showNotification }) => {
         <div className="dashboard-header">
           <div className="welcome-section">
             <h1 className="dashboard-title">
-              Welcome back, {user.name}! 👋
+              Welcome back Driver, {user.name}! 👋
             </h1>
             <p className="dashboard-subtitle">
               Here's your driving activity overview
