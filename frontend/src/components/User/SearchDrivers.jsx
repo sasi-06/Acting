@@ -44,8 +44,9 @@ function SearchDrivers({ user, showNotification }) {
         specialRequests: "",
       };
 
+      // ✅ Correct booking endpoint (plural)
       const res = await axios.post(
-        "http://localhost:5000/api/booking",
+        "http://localhost:5000/api/bookings",
         bookingData,
         {
           headers: {

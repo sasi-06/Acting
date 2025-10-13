@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { driverAPI } from '../../services/api';
 
 const DriverBookings = ({ user, showNotification }) => {
   const [bookings, setBookings] = useState([]);
@@ -22,19 +23,10 @@ const DriverBookings = ({ user, showNotification }) => {
   const fetchBookings = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('driverToken');
-      const response = await fetch('http://localhost:5000/api/bookings/driver', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch bookings');
-      }
-      const data = await response.json();
-      setBookings(data);
+      const response = await driverAPI.getBookings();
+      setBookings(response.data);
     } catch (error) {
-      showNotification(error.message || 'Failed to fetch bookings', 'error');
+      showNotification(error.response?.data?.message || 'Failed to fetch bookings', 'error');
     }
     setLoading(false);
   };
