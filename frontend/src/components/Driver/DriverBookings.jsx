@@ -23,7 +23,7 @@ const DriverBookings = ({ user, showNotification }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('driverToken');
-      const response = await fetch('http://localhost:5000/api/driver/bookings', {
+      const response = await fetch('http://localhost:5000/api/bookings/driver', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -93,7 +93,7 @@ const DriverBookings = ({ user, showNotification }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('driverToken');
-      const response = await fetch(`http://localhost:5000/api/driver/bookings/${bookingId}/${action}`, {
+      const response = await fetch(`http://localhost:5000/api/bookings/driver/${bookingId}/${action}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`

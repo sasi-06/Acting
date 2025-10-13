@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import './DriverDashboard.css';
+
 const DriverDashboard = ({ user, showNotification }) => {
   const [stats, setStats] = useState({
     totalBookings: 0,
@@ -9,7 +10,7 @@ const DriverDashboard = ({ user, showNotification }) => {
     totalEarnings: 0,
     averageRating: 0
   });
-  
+
   const [availability, setAvailability] = useState('Available');
   const [recentBookings, setRecentBookings] = useState([]);
   const [notifications, setNotifications] = useState([]);
@@ -22,79 +23,72 @@ const DriverDashboard = ({ user, showNotification }) => {
     fetchNotifications();
   }, [selectedPeriod]);
 
+  // ===================== Fetch Stats =====================
   const fetchDashboardData = async () => {
     setLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const mockStats = {
-      totalBookings: 45,
-      pendingBookings: 3,
-      completedBookings: 40,
-      totalEarnings: 67500,
-      averageRating: 4.7
-    };
-    
-    // Animate numbers
-    Object.keys(mockStats).forEach(key => {
-      let current = 0;
-      const target = mockStats[key];
-      const increment = target / 30;
-      const timer = setInterval(() => {
-        current += increment;
-        if (current >= target) {
-          current = target;
-          clearInterval(timer);
-        }
-        setStats(prev => ({ ...prev, [key]: Math.floor(current * 10) / 10 }));
-      }, 50);
-    });
-    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/bookings/driver/stats', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+
+      if (response.ok) {
+        setStats({
+          totalBookings: (data.completedTrips || 0) + (data.pendingTrips || 0),
+          pendingBookings: data.pendingTrips || 0,
+          completedBookings: data.completedTrips || 0,
+          totalEarnings: data.totalEarnings || 0,
+          averageRating: data.rating || 0
+        });
+      } else {
+        showNotification(data.message || 'Failed to load stats', 'error');
+      }
+    } catch (error) {
+      console.error('❌ fetchDashboardData error:', error);
+      showNotification('Error fetching stats', 'error');
+    }
     setLoading(false);
   };
 
+  // ===================== Fetch Recent Bookings =====================
   const fetchRecentBookings = async () => {
-    const mockBookings = [
-      {
-        id: 1,
-        customerName: 'Rajesh Kumar',
-        pickupLocation: 'T. Nagar, Chennai',
-        dropLocation: 'ECR Beach House',
-        tripDate: '2025-09-05',
-        status: 'Pending',
-        amount: 2500,
-        vehicleType: 'Sedan'
-      },
-      {
-        id: 2,
-        customerName: 'Ganesh M',
-        pickupLocation: 'Coimbatore Railway Station',
-        dropLocation: 'Ooty Hill Station',
-        tripDate: '2025-09-03',
-        status: 'Confirmed',
-        amount: 3500,
-        vehicleType: 'SUV'
-      },
-      {
-        id: 3,
-        customerName: 'Hari A',
-        pickupLocation: 'Madurai Airport',
-        dropLocation: 'Rameshwaram Temple',
-        tripDate: '2025-09-01',
-        status: 'Completed',
-        amount: 4000,
-        vehicleType: 'Luxury Car'
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/bookings/driver', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+
+      if (response.ok && Array.isArray(data)) {
+        const mapped = data.map((booking) => ({
+          id: booking.id,
+          customerName: booking.User?.username || 'Unknown User',
+          pickupLocation: booking.pickupLocation,
+          dropLocation: booking.dropLocation,
+          tripDate: booking.tripStart?.split('T')[0] || '',
+          status: booking.status,
+          amount: booking.amount,
+          vehicleType: booking.Driver?.vehicleType || 'N/A'
+        }));
+        setRecentBookings(mapped);
+      } else {
+        showNotification(data.message || 'No bookings found', 'info');
       }
-    ];
-    
-    setRecentBookings(mockBookings);
+    } catch (error) {
+      console.error('❌ fetchRecentBookings error:', error);
+      showNotification('Error fetching bookings', 'error');
+    }
+    setLoading(false);
   };
 
+  // ===================== Notifications (Mock) =====================
   const fetchNotifications = async () => {
     const mockNotifications = [
       {
         id: 1,
-        message: 'New booking request from Rajesh Kumar',
+        message: 'New booking request received!',
         type: 'booking',
         time: '2 hours ago',
         read: false
@@ -108,84 +102,90 @@ const DriverDashboard = ({ user, showNotification }) => {
       },
       {
         id: 3,
-        message: 'New review: "Excellent driving skills!"',
+        message: 'New review from user: "Excellent driving!"',
         type: 'review',
         time: '2 days ago',
         read: false
       }
     ];
-    
     setNotifications(mockNotifications);
   };
 
+  // ===================== Availability Toggle =====================
   const handleAvailabilityChange = async (newAvailability) => {
     setLoading(true);
-    
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setAvailability(newAvailability);
-      showNotification(
-        `Availability updated to ${newAvailability}`, 
-        'success'
-      );
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/drivers/${user.id}/availability`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ availability: newAvailability }),
+      });
+      const data = await response.json();
+
+      if (response.ok) {
+        setAvailability(newAvailability);
+        showNotification(`Availability updated to ${newAvailability}`, 'success');
+      } else {
+        showNotification(data.message || 'Failed to update', 'error');
+      }
     } catch (error) {
+      console.error('❌ handleAvailabilityChange error:', error);
       showNotification('Failed to update availability', 'error');
     }
-    
     setLoading(false);
   };
 
+  // ===================== Booking Action =====================
   const handleBookingAction = async (bookingId, action) => {
-  setLoading(true);
-  
-  try {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Update booking status
-    setRecentBookings(prev => 
-      prev.map(booking => 
-        booking.id === bookingId 
-          ? { ...booking, status: action === 'accept' ? 'Confirmed' : 'Rejected' }
-          : booking
-      )
-    );
-    
-    // Automatically change driver status to "Not Available" when accepting
-    if (action === 'accept') {
-      setAvailability('Not Available');
-    }
-    
-    showNotification(
-      `Booking ${action === 'accept' ? 'accepted' : 'rejected'} successfully`,
-      'success'
-    );
-  } catch (error) {
-    showNotification('Action failed. Please try again.', 'error');
-  }
-  
-  setLoading(false);
-};
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/bookings/driver/${bookingId}/${action}`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
+      const data = await response.json();
+      if (response.ok) {
+        setRecentBookings(prev =>
+          prev.map(b => b.id === bookingId ? { ...b, status: data.booking.status } : b)
+        );
+
+        if (action === 'accept') setAvailability('Not Available');
+        showNotification(`Booking ${action}ed successfully`, 'success');
+      } else {
+        showNotification(data.message || 'Action failed', 'error');
+      }
+    } catch (error) {
+      console.error('❌ handleBookingAction error:', error);
+      showNotification('Action failed. Please try again.', 'error');
+    }
+    setLoading(false);
+  };
+
+  // ===================== Notification Read =====================
   const markNotificationRead = (notificationId) => {
     setNotifications(prev =>
-      prev.map(notif =>
-        notif.id === notificationId ? { ...notif, read: true } : notif
-      )
+      prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
     );
   };
 
+  // ===================== Status Badge =====================
   const getStatusBadge = (status) => {
     const statusClasses = {
-      'Pending': 'status-pending',
-      'Confirmed': 'status-confirmed',
-      'Completed': 'status-completed',
-      'Rejected': 'status-rejected'
+      Pending: 'status-pending',
+      Confirmed: 'status-confirmed',
+      Completed: 'status-completed',
+      Rejected: 'status-rejected'
     };
-    
     return <span className={`status-badge ${statusClasses[status]}`}>{status}</span>;
   };
 
+  // ===================== JSX =====================
   return (
     <div className="container">
       <div className="dashboard">
@@ -198,7 +198,7 @@ const DriverDashboard = ({ user, showNotification }) => {
               Here's your driving activity overview
             </p>
           </div>
-          
+
           <div className="availability-toggle">
             <label className="toggle-label">Current Status:</label>
             <div className="toggle-buttons">
@@ -220,7 +220,7 @@ const DriverDashboard = ({ user, showNotification }) => {
           </div>
         </div>
 
-        {/* Stats Cards */}
+        {/* Stats Section */}
         <div className="stats-section">
           <div className="period-selector">
             <button
@@ -288,7 +288,7 @@ const DriverDashboard = ({ user, showNotification }) => {
           </div>
         </div>
 
-        {/* Quick Actions */}
+        {/* Quick Actions Section */}
         <div className="quick-actions-section">
           <h3 className="section-title">Quick Actions</h3>
           <div className="quick-actions-grid">
@@ -299,7 +299,7 @@ const DriverDashboard = ({ user, showNotification }) => {
                 <p>Manage your information</p>
               </div>
             </Link>
-            
+
             <Link to="/driver/bookings" className="action-card">
               <div className="action-icon">📅</div>
               <div className="action-content">
@@ -307,7 +307,7 @@ const DriverDashboard = ({ user, showNotification }) => {
                 <p>Manage your trips</p>
               </div>
             </Link>
-            
+
             <div className="action-card" onClick={() => showNotification('Feature coming soon!', 'info')}>
               <div className="action-icon">💬</div>
               <div className="action-content">
@@ -315,7 +315,7 @@ const DriverDashboard = ({ user, showNotification }) => {
                 <p>Get help & support</p>
               </div>
             </div>
-            
+
             <div className="action-card" onClick={() => showNotification('Feature coming soon!', 'info')}>
               <div className="action-icon">📊</div>
               <div className="action-content">
@@ -332,9 +332,9 @@ const DriverDashboard = ({ user, showNotification }) => {
             <h3 className="section-title">Recent Bookings</h3>
             <Link to="/driver/bookings" className="btn btn-primary">View All</Link>
           </div>
-          
+
           <div className="bookings-list">
-            {recentBookings.map(booking => (
+            {recentBookings.map((booking) => (
               <div key={booking.id} className="booking-card">
                 <div className="booking-header">
                   <div className="customer-info">
@@ -348,7 +348,7 @@ const DriverDashboard = ({ user, showNotification }) => {
                   </div>
                   {getStatusBadge(booking.status)}
                 </div>
-                
+
                 <div className="booking-details">
                   <div className="location-info">
                     <div className="location-item">
@@ -361,7 +361,7 @@ const DriverDashboard = ({ user, showNotification }) => {
                       <span className="location-text">{booking.dropLocation}</span>
                     </div>
                   </div>
-                  
+
                   <div className="booking-meta">
                     <span className="vehicle-type">🚗 {booking.vehicleType}</span>
                     <span className="amount">💰 ₹{booking.amount}</span>
@@ -391,26 +391,26 @@ const DriverDashboard = ({ user, showNotification }) => {
           </div>
         </div>
 
-        {/* Notifications Panel */}
+        {/* Notifications */}
         <div className="notifications-section">
           <h3 className="section-title">Recent Notifications</h3>
           <div className="notifications-list">
-            {notifications.map(notification => (
+            {notifications.map((n) => (
               <div
-                key={notification.id}
-                className={`notification-item ${!notification.read ? 'unread' : ''}`}
-                onClick={() => markNotificationRead(notification.id)}
+                key={n.id}
+                className={`notification-item ${!n.read ? 'unread' : ''}`}
+                onClick={() => markNotificationRead(n.id)}
               >
                 <div className="notification-icon">
-                  {notification.type === 'booking' && '📋'}
-                  {notification.type === 'payment' && '💰'}
-                  {notification.type === 'review' && '⭐'}
+                  {n.type === 'booking' && '📋'}
+                  {n.type === 'payment' && '💰'}
+                  {n.type === 'review' && '⭐'}
                 </div>
                 <div className="notification-content">
-                  <p className="notification-message">{notification.message}</p>
-                  <span className="notification-time">{notification.time}</span>
+                  <p className="notification-message">{n.message}</p>
+                  <span className="notification-time">{n.time}</span>
                 </div>
-                {!notification.read && <div className="unread-indicator"></div>}
+                {!n.read && <div className="unread-indicator"></div>}
               </div>
             ))}
           </div>
@@ -419,6 +419,5 @@ const DriverDashboard = ({ user, showNotification }) => {
     </div>
   );
 };
-
 
 export default DriverDashboard;

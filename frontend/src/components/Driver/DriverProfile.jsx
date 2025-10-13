@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './DriverProfile.css';
+import { driverAPI } from '../../services/api';
 const DriverProfile = ({ user, setUser, showNotification }) => {
   const [profileData, setProfileData] = useState({
     driverName: 'John Doe',
@@ -122,29 +123,36 @@ const DriverProfile = ({ user, setUser, showNotification }) => {
 
   const handleSave = async () => {
     if (!validateForm()) return;
-    
+
     setLoading(true);
-    
+
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+      const updateData = {
+        name: profileData.driverName,
+        phone: profileData.phone,
+        yearsOfExperience: profileData.yearsOfExperience,
+        district: profileData.district,
+        city: profileData.city,
+        availability: profileData.availability,
+        healthStatus: profileData.healthStatus,
+        specialization: profileData.specialization,
+        salaryPerDay: profileData.salaryPerDay
+      };
+
+      const response = await driverAPI.updateProfile(updateData);
+
       setEditMode(false);
       showNotification('Profile updated successfully!', 'success');
-      
-      // Update user context if needed
-      if (setUser) {
-        const updatedUser = {
-          ...user,
-          name: profileData.driverName,
-          phone: profileData.phone
-        };
-        setUser(updatedUser);
-        localStorage.setItem('user', JSON.stringify(updatedUser));
+
+      // Update user context with the response from backend
+      if (setUser && response.data) {
+        setUser(response.data.driver);
       }
     } catch (error) {
+      console.error('Update profile error:', error);
       showNotification('Failed to update profile. Please try again.', 'error');
     }
-    
+
     setLoading(false);
   };
 
