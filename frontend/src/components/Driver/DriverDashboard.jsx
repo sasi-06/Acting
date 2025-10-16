@@ -8,7 +8,7 @@ const DriverDashboard = ({ user, showNotification }) => {
     pendingBookings: 0,
     completedBookings: 0,
     totalEarnings: 0,
-    averageRating: 0
+    averageRating: 0,
   });
 
   const [availability, setAvailability] = useState('Available');
@@ -21,64 +21,77 @@ const DriverDashboard = ({ user, showNotification }) => {
     fetchDashboardData();
     fetchRecentBookings();
     fetchNotifications();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPeriod]);
 
   // ===================== Fetch Stats =====================
   const fetchDashboardData = async () => {
+    if (!user?.id) return;
+
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/bookings/driver/stats', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await fetch(
+        `http://localhost:5000/api/bookings/driver/stats/${user.id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
       const data = await response.json();
 
       if (response.ok) {
         setStats({
-          totalBookings: (data.completedTrips || 0) + (data.pendingTrips || 0),
-          pendingBookings: data.pendingTrips || 0,
-          completedBookings: data.completedTrips || 0,
+          totalBookings: data.totalBookings || 0,
+          pendingBookings: data.pending || 0,
+          completedBookings: data.completed || 0,
           totalEarnings: data.totalEarnings || 0,
-          averageRating: data.rating || 0
+          averageRating: data.averageRating || 0,
         });
       } else {
-        showNotification(data.message || 'Failed to load stats', 'error');
+        showNotification?.(data.message || 'Failed to load stats', 'error');
       }
     } catch (error) {
       console.error('❌ fetchDashboardData error:', error);
-      showNotification('Error fetching stats', 'error');
+      showNotification?.('Error fetching stats', 'error');
     }
     setLoading(false);
   };
 
   // ===================== Fetch Recent Bookings =====================
   const fetchRecentBookings = async () => {
+    if (!user?.id) return;
+
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/bookings/driver', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await fetch(
+        `http://localhost:5000/api/bookings/driver/recent/${user.id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
       const data = await response.json();
 
       if (response.ok && Array.isArray(data)) {
         const mapped = data.map((booking) => ({
           id: booking.id,
-          customerName: booking.User?.username || 'Unknown User',
-          pickupLocation: booking.pickupLocation,
-          dropLocation: booking.dropLocation,
-          tripDate: booking.tripStart?.split('T')[0] || '',
+          customerName: booking.userName || 'Unknown User',
+          pickupLocation: booking.pickup,
+          dropLocation: booking.drop,
+          tripDate: booking.date || '',
           status: booking.status,
-          amount: booking.amount,
-          vehicleType: booking.Driver?.vehicleType || 'N/A'
+          amount: booking.fare || 0,
+          vehicleType: booking.Driver?.vehicleType || 'N/A',
         }));
         setRecentBookings(mapped);
       } else {
-        showNotification(data.message || 'No bookings found', 'info');
+        showNotification?.(data.message || 'No bookings found', 'info');
       }
     } catch (error) {
       console.error('❌ fetchRecentBookings error:', error);
-      showNotification('Error fetching bookings', 'error');
+      showNotification?.('Error fetching bookings', 'error');
     }
     setLoading(false);
   };
@@ -91,50 +104,58 @@ const DriverDashboard = ({ user, showNotification }) => {
         message: 'New booking request received!',
         type: 'booking',
         time: '2 hours ago',
-        read: false
+        read: false,
       },
       {
         id: 2,
         message: 'Payment received for completed trip',
         type: 'payment',
         time: '1 day ago',
-        read: true
+        read: true,
       },
       {
         id: 3,
         message: 'New review from user: "Excellent driving!"',
         type: 'review',
         time: '2 days ago',
-        read: false
-      }
+        read: false,
+      },
     ];
     setNotifications(mockNotifications);
   };
 
   // ===================== Availability Toggle =====================
   const handleAvailabilityChange = async (newAvailability) => {
+    if (!user?.id) {
+      showNotification?.('Driver not logged in', 'error');
+      return;
+    }
+
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/drivers/${user.id}/availability`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ availability: newAvailability }),
-      });
-      const data = await response.json();
+      const response = await fetch(
+        `http://localhost:5000/api/drivers/${user.id}/availability`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ availability: newAvailability }),
+        }
+      );
 
+      const data = await response.json();
       if (response.ok) {
         setAvailability(newAvailability);
-        showNotification(`Availability updated to ${newAvailability}`, 'success');
+        showNotification?.(`Availability updated to ${newAvailability}`, 'success');
       } else {
-        showNotification(data.message || 'Failed to update', 'error');
+        showNotification?.(data.message || 'Failed to update', 'error');
       }
     } catch (error) {
       console.error('❌ handleAvailabilityChange error:', error);
-      showNotification('Failed to update availability', 'error');
+      showNotification?.('Failed to update availability', 'error');
     }
     setLoading(false);
   };
@@ -144,33 +165,36 @@ const DriverDashboard = ({ user, showNotification }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/bookings/driver/${bookingId}/${action}`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await fetch(
+        `http://localhost:5000/api/bookings/driver/${bookingId}/${action}`,
+        {
+          method: 'PUT',
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
       const data = await response.json();
-      if (response.ok) {
-        setRecentBookings(prev =>
-          prev.map(b => b.id === bookingId ? { ...b, status: data.booking.status } : b)
+      if (response.ok && data.booking) {
+        setRecentBookings((prev) =>
+          prev.map((b) => (b.id === bookingId ? { ...b, status: data.booking.status } : b))
         );
 
         if (action === 'accept') setAvailability('Not Available');
-        showNotification(`Booking ${action}ed successfully`, 'success');
+        showNotification?.(`Booking ${action}ed successfully`, 'success');
       } else {
-        showNotification(data.message || 'Action failed', 'error');
+        showNotification?.(data.message || 'Action failed', 'error');
       }
     } catch (error) {
       console.error('❌ handleBookingAction error:', error);
-      showNotification('Action failed. Please try again.', 'error');
+      showNotification?.('Action failed. Please try again.', 'error');
     }
     setLoading(false);
   };
 
   // ===================== Notification Read =====================
   const markNotificationRead = (notificationId) => {
-    setNotifications(prev =>
-      prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
     );
   };
 
@@ -180,9 +204,9 @@ const DriverDashboard = ({ user, showNotification }) => {
       Pending: 'status-pending',
       Confirmed: 'status-confirmed',
       Completed: 'status-completed',
-      Rejected: 'status-rejected'
+      Rejected: 'status-rejected',
     };
-    return <span className={`status-badge ${statusClasses[status]}`}>{status}</span>;
+    return <span className={`status-badge ${statusClasses[status] || ''}`}>{status}</span>;
   };
 
   // ===================== JSX =====================
@@ -192,7 +216,7 @@ const DriverDashboard = ({ user, showNotification }) => {
         <div className="dashboard-header">
           <div className="welcome-section">
             <h1 className="dashboard-title">
-              Welcome back Driver, {user.name}! 👋
+              Welcome back Driver, {user?.name || 'Guest'}! 👋
             </h1>
             <p className="dashboard-subtitle">
               Here's your driving activity overview
@@ -223,31 +247,28 @@ const DriverDashboard = ({ user, showNotification }) => {
         {/* Stats Section */}
         <div className="stats-section">
           <div className="period-selector">
-            <button
-              className={`period-btn ${selectedPeriod === 'week' ? 'active' : ''}`}
-              onClick={() => setSelectedPeriod('week')}
-            >
-              This Week
-            </button>
-            <button
-              className={`period-btn ${selectedPeriod === 'month' ? 'active' : ''}`}
-              onClick={() => setSelectedPeriod('month')}
-            >
-              This Month
-            </button>
-            <button
-              className={`period-btn ${selectedPeriod === 'year' ? 'active' : ''}`}
-              onClick={() => setSelectedPeriod('year')}
-            >
-              This Year
-            </button>
+            {['week', 'month', 'year'].map((period) => (
+              <button
+                key={period}
+                className={`period-btn ${selectedPeriod === period ? 'active' : ''}`}
+                onClick={() => setSelectedPeriod(period)}
+              >
+                {period === 'week'
+                  ? 'This Week'
+                  : period === 'month'
+                  ? 'This Month'
+                  : 'This Year'}
+              </button>
+            ))}
           </div>
 
           <div className="stats-grid">
             <div className="stat-card earnings">
               <div className="stat-icon">💰</div>
               <div className="stat-content">
-                <div className="stat-number">₹{stats.totalEarnings.toLocaleString()}</div>
+                <div className="stat-number">
+                  ₹{stats.totalEarnings.toLocaleString()}
+                </div>
                 <div className="stat-label">Total Earnings</div>
                 <div className="stat-change">+12% from last period</div>
               </div>
@@ -268,8 +289,11 @@ const DriverDashboard = ({ user, showNotification }) => {
                 <div className="stat-number">{stats.averageRating}</div>
                 <div className="stat-label">Average Rating</div>
                 <div className="rating-stars">
-                  {[1, 2, 3, 4, 5].map(star => (
-                    <span key={star} className={`star ${star <= stats.averageRating ? 'filled' : ''}`}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <span
+                      key={star}
+                      className={`star ${star <= stats.averageRating ? 'filled' : ''}`}
+                    >
                       ⭐
                     </span>
                   ))}
@@ -282,13 +306,15 @@ const DriverDashboard = ({ user, showNotification }) => {
               <div className="stat-content">
                 <div className="stat-number">{stats.pendingBookings}</div>
                 <div className="stat-label">Pending Requests</div>
-                <Link to="/driver/bookings" className="quick-action">View All →</Link>
+                <Link to="/driver/bookings" className="quick-action">
+                  View All →
+                </Link>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Quick Actions Section */}
+        {/* Quick Actions */}
         <div className="quick-actions-section">
           <h3 className="section-title">Quick Actions</h3>
           <div className="quick-actions-grid">
@@ -308,7 +334,10 @@ const DriverDashboard = ({ user, showNotification }) => {
               </div>
             </Link>
 
-            <div className="action-card" onClick={() => showNotification('Feature coming soon!', 'info')}>
+            <div
+              className="action-card"
+              onClick={() => showNotification?.('Feature coming soon!', 'info')}
+            >
               <div className="action-icon">💬</div>
               <div className="action-content">
                 <h4>Customer Support</h4>
@@ -316,7 +345,10 @@ const DriverDashboard = ({ user, showNotification }) => {
               </div>
             </div>
 
-            <div className="action-card" onClick={() => showNotification('Feature coming soon!', 'info')}>
+            <div
+              className="action-card"
+              onClick={() => showNotification?.('Feature coming soon!', 'info')}
+            >
               <div className="action-icon">📊</div>
               <div className="action-content">
                 <h4>Earnings Report</h4>
@@ -330,10 +362,16 @@ const DriverDashboard = ({ user, showNotification }) => {
         <div className="bookings-section">
           <div className="section-header">
             <h3 className="section-title">Recent Bookings</h3>
-            <Link to="/driver/bookings" className="btn btn-primary">View All</Link>
+            <Link to="/driver/bookings" className="btn btn-primary">
+              View All
+            </Link>
           </div>
 
           <div className="bookings-list">
+            {recentBookings.length === 0 && (
+              <p className="no-bookings">No recent bookings available</p>
+            )}
+
             {recentBookings.map((booking) => (
               <div key={booking.id} className="booking-card">
                 <div className="booking-header">
@@ -353,17 +391,23 @@ const DriverDashboard = ({ user, showNotification }) => {
                   <div className="location-info">
                     <div className="location-item">
                       <span className="location-icon">📍</span>
-                      <span className="location-text">{booking.pickupLocation}</span>
+                      <span className="location-text">
+                        {booking.pickupLocation}
+                      </span>
                     </div>
                     <div className="location-arrow">→</div>
                     <div className="location-item">
                       <span className="location-icon">🎯</span>
-                      <span className="location-text">{booking.dropLocation}</span>
+                      <span className="location-text">
+                        {booking.dropLocation}
+                      </span>
                     </div>
                   </div>
 
                   <div className="booking-meta">
-                    <span className="vehicle-type">🚗 {booking.vehicleType}</span>
+                    <span className="vehicle-type">
+                      🚗 {booking.vehicleType}
+                    </span>
                     <span className="amount">💰 ₹{booking.amount}</span>
                   </div>
                 </div>

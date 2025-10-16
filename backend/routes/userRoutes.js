@@ -1,70 +1,82 @@
 const express = require('express');
 const router = express.Router();
+
 const userController = require('../controllers/userController');
+const bookingController = require('../controllers/bookingController');
 const { getAvailableDrivers } = require('../controllers/driverController');
-const { auth } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 const Token = require('../models/Token');
-const bookingController = require('../controllers/bookingController'); // ✅ Correct import
+const Booking = require('../models/Booking');
+const Driver = require('../models/Driver');
+const User = require('../models/User');
 
 // -------------------- PUBLIC ROUTES --------------------
 
-// User registration & login
-router.post("/register", userController.registerUser);
-router.post("/login", userController.loginUser);
+// ✅ User Registration
+router.post('/register', userController.registerUser);
 
-// Public: fetch available drivers
+// ✅ User Login
+router.post('/login', userController.loginUser);
+
+// ✅ Public list of available drivers (no login needed)
 router.get('/drivers', getAvailableDrivers);
 
 // -------------------- AUTHENTICATED ROUTES --------------------
 
-// Apply auth middleware to all routes below
-router.use(auth);
+// ✅ Protect routes after this
+router.use(authMiddleware);
 
-// Logout
-router.post("/logout", async (req, res) => {
+// ✅ Logout
+router.post('/logout', async (req, res) => {
   try {
     await Token.destroy({ where: { userId: req.user.id } });
-    res.json({ message: "Logged out successfully" });
+    res.json({ message: 'Logged out successfully' });
   } catch (error) {
-    console.error("Logout error:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error('❌ Logout error:', error);
+    res.status(500).json({ message: 'Server error during logout' });
   }
 });
 
-// User profile
+// ✅ User Profile Routes
 router.get('/profile', userController.getProfile);
 router.put('/profile', userController.updateProfile);
 
 // -------------------- BOOKING ROUTES --------------------
 
-// Create a new booking
+// ✅ Create Booking
 router.post('/bookings', bookingController.createBooking);
 
-// Get all bookings of the logged-in user
+// ✅ Get All Bookings for the logged-in user
 router.get('/bookings', async (req, res) => {
   try {
     const userId = req.user.id;
-    const bookings = await require('../models/Booking').findAll({
+    const bookings = await Booking.findAll({
       where: { userId },
       include: [
-        { model: require('../models/Driver') },
-        { model: require('../models/User') }
+        { model: Driver, attributes: ['id', 'name', 'district', 'rating'] },
+        { model: User, attributes: ['id', 'username', 'email', 'district'] }
       ],
       order: [['tripStart', 'DESC']],
     });
     res.json(bookings);
   } catch (error) {
-    console.error('getUserBookings error:', error);
+    console.error('❌ getUserBookings error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
-// Cancel booking
-router.put('/bookings/:bookingId/cancel', bookingController.updateBookingStatus); // ✅ Reuses existing logic
+// ✅ Cancel Booking
+router.put('/bookings/:bookingId/cancel', bookingController.updateBookingStatus);
 
 // -------------------- DASHBOARD & INSIGHTS --------------------
+
+// ✅ Dashboard Stats
 router.get('/dashboard', userController.getDashboardStats);
+
+// ✅ Recent Bookings
 router.get('/recent-bookings', userController.getRecentBookings);
+
+// ✅ Recommended Drivers
 router.get('/recommended-drivers', userController.getRecommendedDrivers);
 
 module.exports = router;

@@ -1,0 +1,279 @@
+.user-dashboard * {
+  box-sizing: border-box;
+}
+
+.user-dashboard {
+  padding: 2rem 1rem;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #fff;
+  /* background removed from here to avoid affecting full page */
+}
+
+.user-dashboard .container {
+  max-width: 1000px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 20px;
+  padding: 2.5rem 3rem;
+  box-shadow:
+    0 4px 6px rgba(0,0,0,0.3),
+    0 1px 3px rgba(0,0,0,0.2);
+  backdrop-filter: blur(15px);
+}
+
+/* Header */
+.user-dashboard .dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 2.5rem;
+}
+
+.user-dashboard .welcome-text h1 {
+  font-size: 2.4rem;
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.user-dashboard .welcome-text p {
+  font-size: 1.2rem;
+  opacity: 0.85;
+  font-weight: 500;
+}
+
+/* Weather card */
+.user-dashboard .weather-card {
+  display: flex;
+  align-items: center;
+  background: rgba(255,255,255,0.15);
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  min-width: 180px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+  user-select: none;
+  transition: background 0.3s ease;
+}
+.user-dashboard .weather-card:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+.user-dashboard .weather-icon {
+  font-size: 3rem;
+  margin-right: 1rem;
+  filter: drop-shadow(0 0 2px #fff);
+}
+
+.user-dashboard .weather-details {
+  line-height: 1.1;
+}
+
+.user-dashboard .temperature {
+  font-weight: 700;
+  font-size: 1.8rem;
+  margin-bottom: 0.15rem;
+}
+
+.user-dashboard .location {
+  font-weight: 600;
+  font-size: 1.1rem;
+  opacity: 0.9;
+}
+
+.user-dashboard .condition {
+  font-size: 0.95rem;
+  font-style: italic;
+  opacity: 0.75;
+}
+
+/* Quick Booking */
+.user-dashboard .quick-booking {
+  margin-bottom: 3rem;
+}
+
+.user-dashboard .quick-booking h3 {
+  font-weight: 700;
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+.user-dashboard .quick-booking-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.user-dashboard .quick-booking-form input,
+.user-dashboard .quick-booking-form select {
+  padding: 0.65rem 1rem;
+  border-radius: 10px;
+  border: none;
+  font-size: 1rem;
+  outline: none;
+  box-shadow:
+    inset 2px 2px 5px rgba(255,255,255,0.6),
+    inset -2px -2px 5px rgba(0,0,0,0.15);
+  background: linear-gradient(145deg, #7f8aff, #5c6bf2);
+  color: #fff;
+  transition: background 0.3s ease;
+  cursor: text;
+}
+
+.user-dashboard .quick-booking-form input::placeholder {
+  color: #cfd5ffaa;
+}
+
+.user-dashboard .quick-booking-form input:focus,
+.user-dashboard .quick-booking-form select:focus {
+  background: linear-gradient(145deg, #a0a9ff, #7f8aff);
+  box-shadow:
+    0 0 8px #7f8aff;
+}
+
+.user-dashboard .find-drivers-btn {
+  background: linear-gradient(145deg, #e0b700, #ffcc00);
+  border: none;
+  padding: 0.85rem 2rem;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #2a2100;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow:
+    0 4px 8px #c6a500,
+    inset 0 -3px 0 #a68700;
+  transition: background 0.25s ease, transform 0.15s ease;
+  user-select: none;
+}
+
+.user-dashboard .find-drivers-btn:hover {
+  background: linear-gradient(145deg, #ffdb1a, #ffd633);
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 12px #c6a500,
+    inset 0 -4px 0 #a68700;
+}
+
+.user-dashboard .find-drivers-btn:active {
+  transform: translateY(0);
+  box-shadow:
+    0 3px 6px #c6a500,
+    inset 0 -2px 0 #a68700;
+}
+
+/* Stats Cards */
+.user-dashboard .stats-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 2rem 1.5rem;
+}
+
+.user-dashboard .stats-card {
+  background: linear-gradient(145deg, #6b77ff, #4651e8);
+  border-radius: 16px;
+  padding: 1.7rem 1.5rem;
+  box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.3),
+              -4px -4px 10px rgba(91, 109, 255, 0.7);
+  display: flex;
+  align-items: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: default;
+}
+
+.user-dashboard .stats-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 6px 6px 15px rgba(0, 0, 0, 0.5),
+              -6px -6px 15px rgba(91, 109, 255, 0.9);
+}
+
+.user-dashboard .stats-card .icon {
+  font-size: 2.6rem;
+  margin-right: 1.2rem;
+  filter: drop-shadow(0 0 5px #aabfff);
+}
+
+.user-dashboard .stats-card .details {
+  flex: 1;
+  color: #e1e6ff;
+}
+
+.user-dashboard .stats-card .count {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 0.15rem;
+  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.user-dashboard .stats-card .label {
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin-bottom: 0.25rem;
+  opacity: 0.9;
+}
+
+.user-dashboard .stats-card .sub-label {
+  font-size: 0.85rem;
+  opacity: 0.75;
+  font-style: italic;
+}
+
+.user-dashboard .stats-card.active {
+  background: linear-gradient(145deg, #28c76f, #1e9f52);
+  box-shadow: 4px 4px 15px rgba(18, 125, 70, 0.8), -4px -4px 15px rgba(40, 198, 111, 0.8);
+}
+
+.user-dashboard .stats-card.bookings {
+  background: linear-gradient(145deg, #ff7f50, #ff5e3a);
+  box-shadow: 4px 4px 15px rgba(204, 71, 28, 0.8), -4px -4px 15px rgba(255, 102, 77, 0.8);
+}
+
+.user-dashboard .stats-card.completed {
+  background: linear-gradient(145deg, #5a9bd5, #3178c6);
+  box-shadow: 4px 4px 15px rgba(25, 82, 132, 0.8), -4px -4px 15px rgba(60, 122, 190, 0.8);
+}
+
+.user-dashboard .stats-card.spent {
+  background: linear-gradient(145deg, #ffc107, #ffb300);
+  box-shadow: 4px 4px 15px rgba(204, 160, 0, 0.8), -4px -4px 15px rgba(255, 180, 0, 0.8);
+}
+
+/* Utility classes */
+.user-dashboard a {
+  color: #ffd54f;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+.user-dashboard a:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .user-dashboard .dashboard-header {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  .user-dashboard .weather-card {
+    justify-content: center;
+  }
+  .user-dashboard .quick-booking-form {
+    grid-template-columns: 1fr;
+  }
+  .user-dashboard .stats-cards {
+    grid-template-columns: 1fr;
+  }
+}
+.user-dashboard .quick-booking-form select option {
+  color: #222; /* Dark text for options */
+  background: #fff; /* White background for options */
+}

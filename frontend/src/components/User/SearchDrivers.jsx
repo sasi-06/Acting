@@ -11,7 +11,7 @@ function SearchDrivers({ user, showNotification }) {
   const fetchDrivers = async () => {
     try {
       setLoading(true);
-      const res = await axios.get('http://localhost:5000/api/user/drivers'); // no auth needed
+      const res = await axios.get('http://localhost:5000/api/user/drivers'); 
       setDrivers(res.data);
       setLoading(false);
     } catch (error) {
@@ -25,7 +25,7 @@ function SearchDrivers({ user, showNotification }) {
     fetchDrivers();
   }, []);
 
-  // 🔹 Handle booking a driver
+  // Handle booking a driver
   const handleBookDriver = async (driver) => {
     try {
       const token = localStorage.getItem("token");
@@ -34,17 +34,27 @@ function SearchDrivers({ user, showNotification }) {
         return;
       }
 
+      const driverId = parseInt(driver.id || driver._id);
+      if (isNaN(driverId)) {
+        showNotification("Invalid driver selected", "error");
+        return;
+      }
+
+      // Prepare ISO date strings
+      const now = new Date();
+      const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+
       const bookingData = {
-        driverId: driver._id || driver.id,
+        driverId,
         pickupLocation: searchLocation || "Not specified",
-        dropLocation: "Unknown Drop", // You can later add fields for this
-        tripStart: new Date().toISOString(),
-        tripEnd: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // +1 hour
-        amount: driver.price || 200,
+        dropLocation: "Unknown Drop",
+        tripStart: now.toISOString(),
+        tripEnd: oneHourLater.toISOString(),
+        amount: parseInt(driver.price) || 200,
         specialRequests: "",
       };
 
-      // ✅ Correct booking endpoint (plural)
+      // Send POST request with token
       const res = await axios.post(
         "http://localhost:5000/api/bookings",
         bookingData,
@@ -56,20 +66,23 @@ function SearchDrivers({ user, showNotification }) {
         }
       );
 
-      if (res.data) {
+      if (res.data?.booking) {
         showNotification(`✅ Successfully booked ${driver.name}`, "success");
-        // Optional: Refresh driver list to mark driver unavailable
+        // Refresh drivers to reflect availability
         fetchDrivers();
+      } else {
+        showNotification(res.data?.message || "Booking failed", "error");
       }
     } catch (error) {
-      console.error("❌ Error creating booking:", error);
-      showNotification("Booking failed", "error");
+      console.error("❌ Error creating booking:", error.response || error);
+      const message = error.response?.data?.message || "Booking failed";
+      showNotification(message, "error");
     }
   };
 
   // Filter drivers by search location
   const filteredDrivers = drivers.filter(driver =>
-    driver.location.toLowerCase().includes(searchLocation.toLowerCase())
+    driver.location?.toLowerCase().includes(searchLocation.toLowerCase())
   );
 
   return (
@@ -98,8 +111,8 @@ function SearchDrivers({ user, showNotification }) {
             <div key={driver.id || driver._id} className="driver-card">
               <h4>{driver.name}</h4>
               <p>Location: {driver.location}</p>
-              <p>Rating: {driver.rating} ⭐</p>
-              <p>Price: ₹{driver.price}</p>
+              <p>Rating: {driver.rating ?? 0} ⭐</p>
+              <p>Price: ₹{driver.price ?? 200}</p>
               <button onClick={() => handleBookDriver(driver)}>
                 Book Now
               </button>

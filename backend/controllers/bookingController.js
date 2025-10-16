@@ -1,32 +1,40 @@
 const Booking = require('../models/Booking');
 const Driver = require('../models/Driver');
 const User = require('../models/User');
-const { Op, fn, col } = require('sequelize');
+const { fn, col } = require('sequelize');
 
 module.exports = {
   // ================= USER BOOKING CREATION =================
   createBooking: async (req, res) => {
     try {
-      const userId = req.user?.id; // from auth middleware
-      const {
-        driverId,
-        pickupLocation,
-        dropLocation,
-        tripStart,
-        tripEnd,
-        specialRequests,
-        amount
-      } = req.body;
+      // Use token userId or fallback from body
+      const userIdRaw = req.user?.id || req.body.userId;
+      const driverIdRaw = req.body.driverId;
 
-      if (!userId || !driverId || !pickupLocation || !dropLocation || !tripStart || !tripEnd) {
+      // Parse IDs to integers
+      const userId = parseInt(userIdRaw);
+      const driverId = parseInt(driverIdRaw);
+
+      if (!userId || !driverId) {
+        return res.status(400).json({ message: 'Invalid user or driver ID' });
+      }
+
+      const { pickupLocation, dropLocation, tripStart, tripEnd, specialRequests, amount } = req.body;
+
+      if (!pickupLocation || !dropLocation || !tripStart || !tripEnd) {
         return res.status(400).json({ message: 'All required fields must be filled.' });
       }
 
-      // Check driver availability
+      // Validate driver existence
       const driver = await Driver.findByPk(driverId);
       if (!driver) return res.status(404).json({ message: 'Driver not found' });
-      if (driver.availability === 'Not Available') {
-        return res.status(400).json({ message: 'Driver is not available right now' });
+      if (driver.availability === 'Not Available') return res.status(400).json({ message: 'Driver is not available' });
+
+      // Validate dates
+      const parsedTripStart = new Date(tripStart);
+      const parsedTripEnd = new Date(tripEnd);
+      if (isNaN(parsedTripStart) || isNaN(parsedTripEnd)) {
+        return res.status(400).json({ message: 'Invalid trip start or end time format.' });
       }
 
       // Create booking
@@ -35,93 +43,28 @@ module.exports = {
         driverId,
         pickupLocation,
         dropLocation,
-        tripStart,
-        tripEnd,
-        specialRequests,
-        amount,
+        tripStart: parsedTripStart,
+        tripEnd: parsedTripEnd,
+        specialRequests: specialRequests || '',
+        amount: amount || 0,
         status: 'Pending',
       });
 
-      // Update driver status
+      // Mark driver unavailable
       await driver.update({ availability: 'Not Available' });
 
-      // Fetch full booking with relations
+      // Fetch full booking with associations
       const fullBooking = await Booking.findByPk(booking.id, {
         include: [
-          { model: User },
-          { model: Driver },
+          { model: User, attributes: ['id', 'username', 'email', 'phone', 'district'], required: false },
+          { model: Driver, attributes: ['id', 'name', 'email', 'phone', 'vehicleType'], required: false },
         ],
       });
 
-      res.status(201).json({
-        message: '✅ Booking created successfully',
-        booking: fullBooking,
-      });
+      res.status(201).json({ message: 'Booking created successfully', booking: fullBooking });
     } catch (error) {
-      console.error('❌ createBooking error:', error);
-      res.status(500).json({ message: 'Server error', error: error.message });
-    }
-  },
-
-  // ================= USER BOOKINGS =================
-  getUserBookings: async (req, res) => {
-    try {
-      const userId = req.user?.id;
-      if (!userId) return res.status(401).json({ message: 'Unauthorized' });
-
-      const bookings = await Booking.findAll({
-        where: { userId },
-        include: [{ model: Driver }],
-        order: [['tripStart', 'DESC']],
-      });
-
-      res.json(bookings);
-    } catch (error) {
-      console.error('❌ getUserBookings error:', error);
-      res.status(500).json({ message: 'Server error', error: error.message });
-    }
-  },
-
-  // ================= CANCEL BOOKING =================
-  cancelBooking: async (req, res) => {
-    try {
-      const { bookingId } = req.params;
-      const userId = req.user?.id;
-
-      const booking = await Booking.findOne({ where: { id: bookingId, userId } });
-      if (!booking) return res.status(404).json({ message: 'Booking not found' });
-
-      if (booking.status === 'Cancelled' || booking.status === 'Completed') {
-        return res.status(400).json({ message: 'Booking cannot be cancelled' });
-      }
-
-      booking.status = 'Cancelled';
-      await booking.save();
-
-      // Make driver available again
-      await Driver.update(
-        { availability: 'Available' },
-        { where: { id: booking.driverId } }
-      );
-
-      res.json({ message: '🚫 Booking cancelled successfully', booking });
-    } catch (error) {
-      console.error('❌ cancelBooking error:', error);
-      res.status(500).json({ message: 'Server error', error: error.message });
-    }
-  },
-
-  // ================= ADMIN =================
-  getAllBookings: async (req, res) => {
-    try {
-      const bookings = await Booking.findAll({
-        include: [{ model: User }, { model: Driver }],
-        order: [['tripStart', 'DESC']],
-      });
-      res.json(bookings);
-    } catch (error) {
-      console.error('❌ getAllBookings error:', error);
-      res.status(500).json({ message: 'Server error', error: error.message });
+      console.error('createBooking error:', error);
+      res.status(500).json({ message: 'Server error occurred while creating booking', error: error.message });
     }
   },
 
@@ -133,13 +76,13 @@ module.exports = {
 
       const bookings = await Booking.findAll({
         where: { driverId },
-        include: [{ model: User }],
+        include: [{ model: User, attributes: ['id', 'username', 'email', 'phone', 'district'], required: false }],
         order: [['tripStart', 'DESC']],
       });
 
       res.json(bookings);
     } catch (error) {
-      console.error('❌ getDriverBookings error:', error);
+      console.error('getDriverBookings error:', error);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   },
@@ -151,13 +94,7 @@ module.exports = {
       const booking = await Booking.findByPk(bookingId);
       if (!booking) return res.status(404).json({ message: 'Booking not found' });
 
-      const statusMap = {
-        accept: 'Confirmed',
-        reject: 'Rejected',
-        cancel: 'Cancelled',
-        complete: 'Completed',
-      };
-
+      const statusMap = { accept: 'Confirmed', reject: 'Rejected', cancel: 'Cancelled', complete: 'Completed' };
       const newStatus = statusMap[action?.toLowerCase()];
       if (!newStatus) return res.status(400).json({ message: 'Invalid action' });
 
@@ -170,21 +107,7 @@ module.exports = {
 
       res.json({ message: `Booking ${newStatus}`, booking });
     } catch (error) {
-      console.error('❌ updateBookingStatus error:', error);
-      res.status(500).json({ message: 'Server error', error: error.message });
-    }
-  },
-
-  // ================= SINGLE BOOKING =================
-  getBookingById: async (req, res) => {
-    try {
-      const booking = await Booking.findByPk(req.params.bookingId, {
-        include: [{ model: User }, { model: Driver }],
-      });
-      if (!booking) return res.status(404).json({ message: 'Booking not found' });
-      res.json(booking);
-    } catch (error) {
-      console.error('❌ getBookingById error:', error);
+      console.error('updateBookingStatus error:', error);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   },
@@ -192,10 +115,13 @@ module.exports = {
   // ================= DRIVER DASHBOARD STATS =================
   getDriverStats: async (req, res) => {
     try {
-      const driverId = req.user?.id;
-      if (!driverId) return res.status(401).json({ message: 'Unauthorized' });
+      // accept both param and token
+      const driverId = parseInt(req.params.driverId) || req.user?.id;
+      if (!driverId) return res.status(400).json({ message: 'Driver ID missing' });
 
-      const totalTrips = await Booking.count({ where: { driverId, status: 'Completed' } });
+      const totalBookings = await Booking.count({ where: { driverId } });
+      const pending = await Booking.count({ where: { driverId, status: 'Pending' } });
+      const completed = await Booking.count({ where: { driverId, status: 'Completed' } });
 
       const earningsResult = await Booking.findOne({
         where: { driverId, status: 'Completed' },
@@ -205,11 +131,72 @@ module.exports = {
 
       const totalEarnings = parseFloat(earningsResult?.totalEarnings || 0);
       const driver = await Driver.findByPk(driverId);
-      const rating = driver?.rating || 0;
+      const averageRating = driver?.rating || 0;
 
-      res.json({ totalTrips, totalEarnings, rating });
+      res.json({ totalBookings, pending, completed, totalEarnings, averageRating });
     } catch (error) {
-      console.error('❌ getDriverStats error:', error);
+      console.error('getDriverStats error:', error);
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  },
+
+  // ================= DRIVER RECENT BOOKINGS =================
+  getRecentDriverBookings: async (req, res) => {
+    try {
+      const driverId = parseInt(req.params.driverId) || req.user?.id;
+      if (!driverId) return res.status(400).json({ message: 'Driver ID missing' });
+
+      const recentBookings = await Booking.findAll({
+        where: { driverId },
+        include: [
+          { model: User, attributes: ['id', 'username', 'email', 'phone', 'district'], required: false },
+          { model: Driver, attributes: ['id', 'name', 'vehicleType'], required: false },
+        ],
+        order: [['tripStart', 'DESC']],
+        limit: 5,
+      });
+
+      res.json(recentBookings);
+    } catch (error) {
+      console.error('getRecentDriverBookings error:', error);
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  },
+
+  // ================= ADMIN GET ALL BOOKINGS =================
+  getAllBookings: async (req, res) => {
+    try {
+      const bookings = await Booking.findAll({
+        include: [
+          { model: User, attributes: ['id', 'username', 'email', 'phone', 'district'], required: false },
+          { model: Driver, attributes: ['id', 'name', 'email', 'phone', 'vehicleType'], required: false },
+        ],
+        order: [['tripStart', 'DESC']],
+      });
+
+      res.json(bookings);
+    } catch (error) {
+      console.error('getAllBookings error:', error);
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  },
+
+  // ================= GET BOOKING BY ID =================
+  getBookingById: async (req, res) => {
+    try {
+      const { bookingId } = req.params;
+      const booking = await Booking.findByPk(bookingId, {
+        include: [
+          { model: User, attributes: ['id', 'username', 'email', 'phone', 'district'], required: false },
+          { model: Driver, attributes: ['id', 'name', 'email', 'phone', 'vehicleType'], required: false },
+        ],
+      });
+
+      if (!booking) return res.status(404).json({ message: 'Booking not found' });
+
+      res.json(booking);
+    } catch (error) {
+      console.error('getBookingById error:', error);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   },

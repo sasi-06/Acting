@@ -5,7 +5,7 @@ const User = require("../models/User");
 const Booking = require("../models/Booking");
 
 module.exports = {
-  // Register user
+  // ================= REGISTER USER =================
   registerUser: async (req, res) => {
     try {
       const {
@@ -23,19 +23,18 @@ module.exports = {
         numberOfPersons,
         carNumber,
       } = req.body;
-      console.log(req.body);
-      
 
-      // Check if email exists
-      const existingUser = await User.findOne({ where: { email } });
-      if (existingUser) {
-        return res.status(400).json({ message: "User already exists with this email" });
+      if (!email || !password || !username) {
+        return res.status(400).json({ message: "Username, email, and password are required." });
       }
 
-      // Hash password
+      const existingUser = await User.findOne({ where: { email } });
+      if (existingUser) {
+        return res.status(400).json({ message: "User already exists with this email." });
+      }
+
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      // Create user with default userType
       const newUser = await User.create({
         username,
         email,
@@ -52,10 +51,12 @@ module.exports = {
         numberOfPersons,
         carNumber,
       });
-      // JWT with userType
+
+      const secret = process.env.JWT_SECRET || "fallback_secret_key";
+
       const token = jwt.sign(
         { id: newUser.id, email: newUser.email, userType: newUser.userType },
-        process.env.JWT_SECRET,
+        secret,
         { expiresIn: "7d" }
       );
 
@@ -68,57 +69,69 @@ module.exports = {
           email: newUser.email,
           phone: newUser.phone,
           district: newUser.district,
-          userType: newUser.userType, // ✅ return userType
+          userType: newUser.userType,
         },
       });
     } catch (error) {
       console.error("Register error:", error);
-      res.status(500).json({ message: "Server error" });
+      res.status(500).json({ message: "Server error while registering user." });
     }
   },
 
-  // Login user
+  // ================= LOGIN USER =================
   loginUser: async (req, res) => {
-    try {
-      const { email, password } = req.body;
+  try {
+    const { email, password } = req.body;
+    console.log("🔍 Login attempt:", email);
 
-      if (!process.env.JWT_SECRET) {
-        console.error("JWT_SECRET is not set in environment variables.");
-        return res.status(500).json({ message: "Server configuration error: missing JWT secret." });
-      }
-
-      const user = await User.findOne({ where: { email } });
-      if (!user) return res.status(400).json({ message: "Invalid email or password" });
-
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) return res.status(400).json({ message: "Invalid email or password" });
-
-      // JWT with userType
-      const token = jwt.sign(
-        { id: user.id, email: user.email, userType: user.userType },
-        process.env.JWT_SECRET,
-        { expiresIn: "7d" }
-      );
-
-      res.json({
-        message: "Login successful",
-        token,
-        user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          phone: user.phone,
-          district: user.district,
-          userType: user.userType, // ✅ always included
-        },
-      });
-    } catch (error) {
-      console.error("Login error:", error);
-      res.status(500).json({ message: "Server error" });
+    if (!email || !password) {
+      console.log("❌ Missing email or password");
+      return res.status(400).json({ message: "Email and password are required." });
     }
-  },
 
-  // Get user profile
+    if (!process.env.JWT_SECRET) {
+      console.error("❌ JWT_SECRET not configured.");
+      return res.status(500).json({ message: "Server configuration error." });
+    }
+
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      console.log("❌ No user found with this email:", email);
+      return res.status(400).json({ message: "Invalid email or password." });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      console.log("❌ Password mismatch for:", email);
+      return res.status(400).json({ message: "Invalid email or password." });
+    }
+
+    const token = jwt.sign(
+      { id: user.id, email: user.email, userType: user.userType },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    console.log("✅ Login success for:", email);
+    res.json({
+      message: "Login successful",
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        phone: user.phone,
+        district: user.district,
+        userType: user.userType,
+      },
+    });
+  } catch (error) {
+    console.error("🔥 Login error:", error);
+    res.status(500).json({ message: "Server error while logging in." });
+  }
+},
+
+  // ================= PROFILE =================
   getProfile: async (req, res) => {
     try {
       const user = await User.findByPk(req.user.id, {
@@ -131,7 +144,6 @@ module.exports = {
     }
   },
 
-  // Update user profile
   updateProfile: async (req, res) => {
     try {
       const { username, phone, district } = req.body;
@@ -149,12 +161,12 @@ module.exports = {
     }
   },
 
-  // Get user bookings
+  // ================= BOOKINGS =================
   getBookings: async (req, res) => {
     try {
       const bookings = await Booking.findAll({
         where: { userId: req.user.id },
-        include: ["Driver"], // ensure Booking model has association
+        include: ["Driver"],
         order: [["tripStartDateTime", "DESC"]],
       });
       res.json(bookings);
@@ -163,7 +175,6 @@ module.exports = {
     }
   },
 
-  // Create a booking
   createBooking: async (req, res) => {
     try {
       const { pickupLocation, dropLocation, tripStart, tripEnd, vehicleType, specialRequests } = req.body;
@@ -182,7 +193,6 @@ module.exports = {
     }
   },
 
-  // Cancel a booking
   cancelBooking: async (req, res) => {
     try {
       const booking = await Booking.findOne({
@@ -202,7 +212,7 @@ module.exports = {
     }
   },
 
-  // Dashboard stats
+  // ================= DASHBOARD =================
   getDashboardStats: async (req, res) => {
     try {
       const userId = req.user.id;
@@ -250,7 +260,7 @@ module.exports = {
       const bookings = await Booking.findAll({
         where: { userId: req.user.id },
         order: [["tripStartDateTime", "DESC"]],
-        limit: 5, // recent 5 bookings
+        limit: 5,
       });
       res.json(bookings);
     } catch (error) {
@@ -260,7 +270,6 @@ module.exports = {
 
   getRecommendedDrivers: async (req, res) => {
     try {
-      // Example: return top 5 drivers with most completed bookings
       const drivers = await Booking.findAll({
         attributes: ["driverId", [Booking.sequelize.fn("COUNT", Booking.sequelize.col("driverId")), "count"]],
         where: { status: "Completed" },
@@ -274,5 +283,4 @@ module.exports = {
       res.status(500).json({ message: "Server error" });
     }
   },
-
 };

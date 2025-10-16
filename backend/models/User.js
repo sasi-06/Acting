@@ -1,6 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../db');
 
+// ✅ Define the User model
 const User = sequelize.define('User', {
   id: {
     type: DataTypes.INTEGER,
@@ -15,6 +16,9 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     allowNull: false,
     unique: true,
+    validate: {
+      isEmail: true,
+    },
   },
   phone: {
     type: DataTypes.STRING,
@@ -61,29 +65,24 @@ const User = sequelize.define('User', {
     allowNull: true,
   },
 
-  // ✅ Added role field
+  // ✅ Added userType field to identify role
   userType: {
     type: DataTypes.STRING,
     allowNull: false,
-    defaultValue: "user", // default role
+    defaultValue: "user",
   },
 
-  createdAt: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW,
-  },
-  updatedAt: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW,
-  },
+  // ✅ Sequelize handles timestamps automatically — no need to redefine them manually
 }, {
-  tableName: 'users',
+  tableName: 'users',  // 👈 IMPORTANT: match your actual MySQL table name here
   timestamps: true,
+  underscored: false,   // keeps camelCase columns
 });
 
-// Associations
+
+// ✅ Associations (do not change)
 const Token = require('./Token');
-User.hasMany(Token, { foreignKey: 'userId' });
+User.hasMany(Token, { foreignKey: 'userId', onDelete: 'CASCADE' });
 Token.belongsTo(User, { foreignKey: 'userId' });
 
 module.exports = User;

@@ -47,11 +47,18 @@ const registerDriver = async (req, res) => {
       licenseCopy: licenseCopyPath
     });
 
-    // Exclude password from response
+    // Generate JWT token immediately after registration
+    const token = jwt.sign(
+      { id: newDriver.id, role: 'driver' },
+      process.env.JWT_SECRET || 'default_secret',
+      { expiresIn: '7d' }
+    );
+
     const { password: _, ...driverData } = newDriver.toJSON();
 
     res.status(201).json({
       message: 'Driver registered successfully',
+      token,
       driver: driverData
     });
   } catch (err) {
@@ -65,22 +72,19 @@ const loginDriver = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Check if driver exists
     const driver = await Driver.findOne({ where: { email } });
     if (!driver) return res.status(401).json({ message: 'Invalid email or password' });
 
-    // Verify password
     const isMatch = await bcrypt.compare(password, driver.password);
     if (!isMatch) return res.status(401).json({ message: 'Invalid email or password' });
 
-    // Generate JWT token
+    // ✅ Include `role: 'driver'` (must match middleware)
     const token = jwt.sign(
       { id: driver.id, role: 'driver' },
       process.env.JWT_SECRET || 'default_secret',
       { expiresIn: '7d' }
     );
 
-    // Exclude password from output
     const { password: _, ...driverData } = driver.toJSON();
 
     res.status(200).json({
@@ -108,7 +112,7 @@ const getDriverProfile = async (req, res) => {
   }
 };
 
-// ✅ Update driver profile
+// ✅ Update driver profile (requires auth + driver role)
 const updateDriverProfile = async (req, res) => {
   try {
     const driver = await Driver.findByPk(req.user.id);
@@ -120,6 +124,7 @@ const updateDriverProfile = async (req, res) => {
       availability, healthStatus, specialization, salaryPerDay
     } = req.body;
 
+    // Handle file upload if new one exists
     const licenseCopy = req.file ? req.file.path : driver.licenseCopy;
 
     await driver.update({
@@ -130,14 +135,17 @@ const updateDriverProfile = async (req, res) => {
     });
 
     const { password: _, ...driverData } = driver.toJSON();
-    res.json({ message: 'Profile updated successfully', driver: driverData });
+    res.status(200).json({
+      message: 'Profile updated successfully',
+      driver: driverData
+    });
   } catch (error) {
     console.error('Update profile error:', error);
     res.status(500).json({ message: 'Server error during profile update' });
   }
 };
 
-// ✅ Get available drivers for frontend
+// ✅ Get available drivers (for users)
 const getAvailableDrivers = async (req, res) => {
   try {
     const drivers = await Driver.findAll({

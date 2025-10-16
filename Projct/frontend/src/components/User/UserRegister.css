@@ -1,0 +1,275 @@
+.registration-header {
+          text-align: center;
+          margin-bottom: 40px;
+        }
+
+        .form-title {
+          font-size: 2.5rem;
+          background: linear-gradient(45deg, #667eea, #764ba2);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          margin-bottom: 20px;
+        }
+
+        .progress-steps {
+          display: flex;
+          justify-content: center;
+          gap: 30px;
+          margin-top: 30px;
+        }
+
+        .step {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          opacity: 0.5;
+          transition: all 0.3s ease;
+        }
+
+        .step.active,
+        .step.completed {
+          opacity: 1;
+        }
+
+        .step-number {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: #e9ecef;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: bold;
+          margin-bottom: 8px;
+          transition: all 0.3s ease;
+        }
+
+        .step.active .step-number {
+          background: linear-gradient(45deg, #667eea, #764ba2);
+          color: white;
+          transform: scale(1.1);
+        }
+
+        .step.completed .step-number {
+          background: #28a745;
+          color: white;
+        }
+
+        .step-label {
+          font-size: 12px;
+          color: #666;
+          font-weight: 500;
+        }
+
+        .step.active .step-label {
+          color: #667eea;
+          font-weight: 600;
+        }
+
+        .step-content {
+          animation: slideInRight 0.5s ease-out;
+        }
+
+        @keyframes slideInRight {
+          from {
+            opacity: 0;
+            transform: translateX(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        .step-title {
+          font-size: 1.5rem;
+          color: #333;
+          margin-bottom: 25px;
+          text-align: center;
+          border-bottom: 2px solid #e9ecef;
+          padding-bottom: 10px;
+        }
+
+        .password-strength {
+          margin-top: 8px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .strength-bar {
+          flex: 1;
+          height: 4px;
+          background: #e9ecef;
+          border-radius: 2px;
+          overflow: hidden;
+        }
+
+        .strength-fill {
+          height: 100%;
+          transition: all 0.3s ease;
+          border-radius: 2px;
+        }
+
+        .strength-label {
+          font-size: 12px;
+          font-weight: 600;
+        }
+
+        .form-actions {
+          display: flex;
+          gap: 15px;
+          margin-top: 30px;
+        }
+
+        .form-actions .btn {
+          flex: 1;
+        }
+
+        .spinner {
+          display: inline-block;
+          width: 16px;
+          height: 16px;
+          border: 2px solid #ffffff;
+          border-radius: 50%;
+          border-top-color: transparent;
+          animation: spin 1s ease-in-out infinite;
+          margin-right: 8px;
+        }
+
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        .form-footer {
+          text-align: center;
+          margin-top: 25px;
+          padding-top: 25px;
+          border-top: 1px solid #e9ecef;
+          color: #333;  /* 👉 Add this line */
+          font-size: 14px; /* optional for readability */
+        }
+
+        .link {
+          color: #667eea;
+          text-decoration: none;
+          font-weight: 600;
+          transition: color 0.3s ease;
+        }
+
+        .link:hover {
+          color: #764ba2;
+          text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+          .progress-steps {
+            gap: 15px;
+          }
+          
+          .step-number {
+            width: 35px;
+            height: 35px;
+          }
+          
+          .step-label {
+            font-size: 10px;
+          }
+          
+          .form-actions {
+            flex-direction: column;
+          }
+        }
+        /* Apply same styles to both .registration-container and .form-container */
+.registration-container,
+.form-container {
+  max-width: 600px;   /* Wider form looks better */
+  margin: 40px auto;
+  padding: 30px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  animation: fadeIn 0.6s ease-in-out;
+}
+
+/* Smooth form fade-in */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Inputs & selects */
+.form-container input,
+.form-container select {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  margin-bottom: 18px;
+  transition: all 0.3s ease;
+  background: #fff;
+}
+
+/* Input focus effect */
+.form-container input:focus,
+.form-container select:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 8px rgba(102, 126, 234, 0.4);
+  outline: none;
+}
+
+/* Buttons */
+.btn-primary,
+.btn-success,
+.btn-secondary {
+  background: linear-gradient(45deg, #667eea, #764ba2);
+  color: #fff;
+  padding: 12px;
+  font-size: 15px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+}
+
+.btn-primary:hover,
+.btn-success:hover,
+.btn-secondary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 12px rgba(118, 75, 162, 0.4);
+}
+
+/* Small helper text */
+.helper-text {
+  font-size: 12px;
+  color: #666;
+  margin-top: -12px;
+  margin-bottom: 12px;
+  display: block;
+}
+
+/* Error styling */
+.form-control.error {
+  border-color: #dc3545 !important;
+  box-shadow: 0 0 6px rgba(220, 53, 69, 0.4);
+}
+.error-text {
+  font-size: 12px;
+  color: #dc3545;
+  margin-top: -10px;
+  margin-bottom: 12px;
+}
+
+/* Responsive tweak */
+@media (max-width: 480px) {
+  .form-container {
+    max-width: 95%;
+    padding: 20px;
+  }
+}
+.form-container form label {
+  color: black !important;
+}
