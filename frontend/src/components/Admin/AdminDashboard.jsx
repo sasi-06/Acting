@@ -21,12 +21,12 @@ function AdminDashboard({ user, showNotification }) {
     const loadData = () => {
       // Animate stats
       const targets = { 
-        totalDrivers: 250, 
-        totalUsers: 500, 
-        totalBookings: 1200, 
-        totalRevenue: 150000,
-        pendingApprovals: 12,
-        activeBookings: 45
+        totalDrivers: 5, 
+        totalUsers: 5, 
+        totalBookings:4, 
+        totalRevenue: 5500,
+        pendingApprovals: 1,
+        activeBookings: 9
       };
       
       Object.keys(targets).forEach(key => {
@@ -45,35 +45,34 @@ function AdminDashboard({ user, showNotification }) {
 
       // Sample recent activity
       setRecentActivity([
-        { id: 1, type: 'booking', message: 'New booking created by John Doe', time: '2 mins ago', status: 'new' },
-        { id: 2, type: 'driver', message: 'Driver application submitted by Mike Smith', time: '15 mins ago', status: 'pending' },
+        { id: 1, type: 'booking', message: 'New booking created by sathish', time: '2 mins ago', status: 'new' },
+        { id: 2, type: 'driver', message: 'Driver application submitted by mari', time: '15 mins ago', status: 'pending' },
         { id: 3, type: 'payment', message: 'Payment of ₹2,500 received', time: '1 hour ago', status: 'success' },
-        { id: 4, type: 'user', message: 'New user registered: Sarah Johnson', time: '2 hours ago', status: 'info' },
+        { id: 4, type: 'user', message: 'New user registered: harish', time: '2 hours ago', status: 'info' },
         { id: 5, type: 'booking', message: 'Booking completed by driver Raj Kumar', time: '3 hours ago', status: 'success' }
       ]);
 
       // Sample drivers data
       setDrivers([
         { id: 1, name: 'Raj Kumar', phone: '+91 9876543210', status: 'active', rating: 4.8, totalTrips: 145 },
-        { id: 2, name: 'Mike Smith', phone: '+91 9876543211', status: 'pending', rating: 0, totalTrips: 0 },
-        { id: 3, name: 'David Wilson', phone: '+91 9876543212', status: 'active', rating: 4.9, totalTrips: 220 },
-        { id: 4, name: 'Ahmed Ali', phone: '+91 9876543213', status: 'inactive', rating: 4.2, totalTrips: 89 }
+        { id: 2, name: 'kishore', phone: '+91 9876543211', status: 'pending', rating: 0, totalTrips: 0 },
+        { id: 3, name: 'Ganesh', phone: '+91 9876543212', status: 'active', rating: 4.9, totalTrips: 220 },
+        { id: 4, name: 'Hari', phone: '+91 9876543213', status: 'inactive', rating: 4.2, totalTrips: 89 }
       ]);
 
       // Sample bookings data
       setBookings([
-        { id: '#B001', user: 'John Doe', driver: 'Raj Kumar', date: '2024-01-15', status: 'completed', amount: '₹2,500' },
-        { id: '#B002', user: 'Sarah Johnson', driver: 'David Wilson', date: '2024-01-15', status: 'active', amount: '₹3,200' },
-        { id: '#B003', user: 'Mike Brown', driver: 'Raj Kumar', date: '2024-01-14', status: 'cancelled', amount: '₹1,800' },
-        { id: '#B004', user: 'Lisa Davis', driver: 'Ahmed Ali', date: '2024-01-14', status: 'completed', amount: '₹2,100' }
+        { id: '#B001', user: 'hari', driver: 'Raj Kumar', date: '2024-01-15', status: 'completed', amount: '₹2,500' },
+        { id: '#B002', user: 'sathish', driver: 'Ganesh', date: '2024-01-15', status: 'active', amount: '₹3,200' },
+        
       ]);
 
       // Sample users data
       setUsers([
-        { id: 1, name: 'John Doe', email: 'john@email.com', phone: '+91 9876543210', joinDate: '2024-01-10', totalBookings: 12 },
-        { id: 2, name: 'Sarah Johnson', email: 'sarah@email.com', phone: '+91 9876543211', joinDate: '2024-01-12', totalBookings: 8 },
-        { id: 3, name: 'Mike Brown', email: 'mike@email.com', phone: '+91 9876543212', joinDate: '2024-01-08', totalBookings: 15 },
-        { id: 4, name: 'Lisa Davis', email: 'lisa@email.com', phone: '+91 9876543213', joinDate: '2024-01-14', totalBookings: 6 }
+        { id: 1, name: 'hari', email: 'hari@email.com', phone: '+91 9876543210', joinDate: '2024-01-10', totalBookings: 12 },
+        { id: 2, name: 'Sathish', email: 'sathish@email.com', phone: '+91 9876543211', joinDate: '2024-01-12', totalBookings: 8 },
+        { id: 3, name: 'sasi', email: 'sasi@email.com', phone: '+91 9876543212', joinDate: '2024-01-08', totalBookings: 15 },
+        { id: 4, name: 'vel', email: 'vel@email.com', phone: '+91 9876543213', joinDate: '2024-01-14', totalBookings: 6 }
       ]);
     };
 

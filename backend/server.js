@@ -22,7 +22,7 @@ app.use(express.urlencoded({ extended: true }));
   try {
     await sequelize.authenticate();
     console.log('✅ Connected to MySQL successfully.');
-    await sequelize.sync({ force: true });
+    await sequelize.sync();
     console.log('✅ Database synchronized.');
   } catch (err) {
     console.error('❌ MySQL connection error:', err);
