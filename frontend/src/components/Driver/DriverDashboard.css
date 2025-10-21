@@ -506,4 +506,26 @@
             flex-direction: column;
           }
         }
-    
+    .location-info {
+  background-color: #1811dc;
+  border-radius: 12px;
+  padding: 10px 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.location-info .location-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.location-info .location-icon {
+  font-size: 18px;
+}
+
+.location-info .location-text {
+  font-weight: 600;
+}

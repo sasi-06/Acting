@@ -59,42 +59,50 @@ const DriverDashboard = ({ user, showNotification }) => {
   };
 
   // ===================== Fetch Recent Bookings =====================
-  const fetchRecentBookings = async () => {
-    if (!user?.id) return;
+  // ===================== Fetch Recent Bookings =====================
+const fetchRecentBookings = async () => {
+  if (!user?.id) return;
 
-    setLoading(true);
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(
-        `http://localhost:5000/api/bookings/driver/recent/${user.id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      const data = await response.json();
-
-      if (response.ok && Array.isArray(data)) {
-        const mapped = data.map((booking) => ({
-          id: booking.id,
-          customerName: booking.userName || 'Unknown User',
-          pickupLocation: booking.pickup,
-          dropLocation: booking.drop,
-          tripDate: booking.date || '',
-          status: booking.status,
-          amount: booking.fare || 0,
-          vehicleType: booking.Driver?.vehicleType || 'N/A',
-        }));
-        setRecentBookings(mapped);
-      } else {
-        showNotification?.(data.message || 'No bookings found', 'info');
+  setLoading(true);
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(
+      `http://localhost:5000/api/bookings/driver/recent/${user.id}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
       }
-    } catch (error) {
-      console.error('❌ fetchRecentBookings error:', error);
-      showNotification?.('Error fetching bookings', 'error');
+    );
+
+    const data = await response.json();
+
+    if (response.ok && Array.isArray(data)) {
+      const mapped = data.map((booking) => ({
+        id: booking.id,
+        customerName:
+          booking.User?.username ||
+          booking.User?.name ||
+          'Unknown User',
+        pickupLocation: booking.pickupLocation || 'N/A',
+        dropLocation: booking.dropLocation || 'N/A',
+        tripDate: booking.tripStart
+          ? new Date(booking.tripStart).toLocaleString()
+          : 'No Date',
+        status: booking.status,
+        amount: booking.amount || 0,
+        vehicleType: booking.Driver?.vehicleType || 'N/A',
+      }));
+
+      setRecentBookings(mapped);
+    } else {
+      showNotification?.(data.message || 'No bookings found', 'info');
     }
-    setLoading(false);
-  };
+  } catch (error) {
+    console.error('❌ fetchRecentBookings error:', error);
+    showNotification?.('Error fetching bookings', 'error');
+  }
+  setLoading(false);
+};
+
 
   // ===================== Notifications (Mock) =====================
   const fetchNotifications = async () => {
@@ -103,7 +111,7 @@ const DriverDashboard = ({ user, showNotification }) => {
         id: 1,
         message: 'New booking request received!',
         type: 'booking',
-        time: '2 hours ago',
+        time: '1 day  ago',
         read: false,
       },
       {
