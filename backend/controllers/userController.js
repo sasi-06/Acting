@@ -11,7 +11,6 @@ const jwt = require('jsonwebtoken');
 exports.registerUser = async (req, res) => {
   try {
     const { username, email, phone, password, district } = req.body;
-
     if (!username || !email || !password) {
       return res.status(400).json({ message: 'All required fields must be filled' });
     }
@@ -21,7 +20,11 @@ exports.registerUser = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await User.create({
-      username, email, phone, district, password: hashedPassword
+      username,
+      email,
+      phone,
+      district,
+      password: hashedPassword
     });
 
     const token = jwt.sign(
@@ -54,7 +57,6 @@ exports.loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ where: { email } });
-
     if (!user) return res.status(401).json({ message: 'Invalid email or password' });
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -109,7 +111,7 @@ exports.updateProfile = async (req, res) => {
 };
 
 // ==========================================================
-// ✅ CREATE QUICK BOOKING (no duplicates)
+// ✅ CREATE QUICK BOOKING (salaryPerDay fix)
 // ==========================================================
 exports.createQuickBooking = async (req, res) => {
   try {
@@ -128,17 +130,19 @@ exports.createQuickBooking = async (req, res) => {
 
     let driverId = req.body.driverId || (Array.isArray(req.body.driverIds) && req.body.driverIds[0]) || null;
 
+    // 🧩 Field validation
     if (!pickupLocation || !dropLocation || !tripStartDateTime || !vehicleType) {
       return res.status(400).json({
         success: false,
-        message: 'Missing required fields: pickupLocation, dropLocation, tripStartDateTime, vehicleType',
+        message: 'Missing required fields: pickupLocation, dropLocation, tripStartDateTime, vehicleType'
       });
     }
 
+    // 🧩 Find driver if not provided
     if (!driverId) {
       const availableDriver = await Driver.findOne({
         where: { availability: 'Available' },
-        order: [['rating', 'DESC']],
+        order: [['rating', 'DESC']]
       });
       if (!availableDriver) {
         return res.status(400).json({ success: false, message: 'No available driver found' });
@@ -149,6 +153,7 @@ exports.createQuickBooking = async (req, res) => {
     const driver = await Driver.findByPk(driverId);
     if (!driver) return res.status(404).json({ success: false, message: 'Driver not found' });
 
+    // 🧩 Parse start/end times
     const start = new Date(tripStartDateTime);
     if (isNaN(start.getTime())) {
       return res.status(400).json({ success: false, message: 'Invalid tripStartDateTime format' });
@@ -156,24 +161,28 @@ exports.createQuickBooking = async (req, res) => {
 
     const end = tripEndDateTime
       ? new Date(tripEndDateTime)
-      : new Date(start.getTime() + 2 * 60 * 60 * 1000);
+      : new Date(start.getTime() + 2 * 60 * 60 * 1000); // Default 2 hours later
 
+    // 🧩 Prevent duplicate booking
     const existingBooking = await Booking.findOne({
       where: {
         userId,
         pickupLocation,
         dropLocation,
         tripStart: start,
-        status: { [Op.ne]: 'Cancelled' },
-      },
+        status: { [Op.ne]: 'Cancelled' }
+      }
     });
 
     if (existingBooking) {
       return res.status(409).json({
         success: false,
-        message: 'Duplicate booking detected. You have already booked this trip.',
+        message: 'Duplicate booking detected. You have already booked this trip.'
       });
     }
+
+    // ✅ Create booking (fix salaryPerDay usage)
+    const salaryPerDay = driver.salaryPerDay ?? 0;
 
     const booking = await Booking.create({
       userId,
@@ -184,26 +193,23 @@ exports.createQuickBooking = async (req, res) => {
       tripEnd: end,
       vehicleType,
       status: 'Pending',
-      fare: driver.salaryPerDay || 0,
-      paymentStatus: 'Unpaid',
+      fare: salaryPerDay,
+      paymentStatus: 'Unpaid'
     });
-
-    const response = {
-      bookingId: booking.id,
-      driverId: driver.id,
-      driverName: driver.name,
-      vehicleType: driver.vehicleType || vehicleType,
-      pickupLocation: booking.pickupLocation,
-      dropLocation: booking.dropLocation,
-      status: booking.status,
-      tripStartDateTime: booking.tripStart,
-      salaryPerDay: driver.salaryPerDay,
-    };
 
     res.json({
       success: true,
       message: 'Booking created successfully',
-      data: response,
+      data: {
+        bookingId: booking.id,
+        driverId: driver.id,
+        driverName: driver.name,
+        vehicleType: driver.vehicleType || vehicleType,
+        pickupLocation,
+        dropLocation,
+        tripStartDateTime: start,
+        salaryPerDay
+      }
     });
   } catch (error) {
     console.error('❌ createQuickBooking error:', error);
@@ -229,7 +235,7 @@ exports.getDashboardStats = async (req, res) => {
 };
 
 // ==========================================================
-// ✅ RECENT BOOKINGS (salary fix)
+// ✅ RECENT BOOKINGS
 // ==========================================================
 exports.getRecentBookings = async (req, res) => {
   try {
@@ -251,7 +257,7 @@ exports.getRecentBookings = async (req, res) => {
         ]
       }],
       order: [['tripStart', 'DESC']],
-      limit: 5,
+      limit: 5
     });
 
     const formatted = bookings.map((b) => ({
@@ -260,30 +266,29 @@ exports.getRecentBookings = async (req, res) => {
       dropLocation: b.dropLocation || 'Unknown Drop',
       tripStartDateTime: b.tripStart,
       status: b.status,
-      driver: b.Driver ? {
-        id: b.Driver.id,
-        name: b.Driver.name,
-        district: b.Driver.district,
-        rating: b.Driver.rating,
-        experience: b.Driver.yearsOfExperience,
-        vehicleType: b.Driver.vehicleType,
-        specialization: b.Driver.specialization,
-        salaryPerDay: b.Driver.salaryPerDay ?? 'Not specified'
-      } : null,
+      driver: b.Driver
+        ? {
+            id: b.Driver.id,
+            name: b.Driver.name,
+            district: b.Driver.district,
+            rating: b.Driver.rating,
+            experience: b.Driver.yearsOfExperience,
+            vehicleType: b.Driver.vehicleType,
+            specialization: b.Driver.specialization,
+            salaryPerDay: b.Driver.salaryPerDay ?? 0
+          }
+        : null
     }));
 
     res.json(formatted);
   } catch (error) {
     console.error('❌ getRecentBookings error:', error);
-    res.status(500).json({
-      message: 'Server error fetching recent bookings',
-      error: error.message
-    });
+    res.status(500).json({ message: 'Server error fetching recent bookings', error: error.message });
   }
 };
 
 // ==========================================================
-// ✅ RECOMMENDED DRIVERS (salary fix)
+// ✅ RECOMMENDED DRIVERS
 // ==========================================================
 exports.getRecommendedDrivers = async (req, res) => {
   try {
@@ -297,7 +302,7 @@ exports.getRecommendedDrivers = async (req, res) => {
         'yearsOfExperience',
         'specialization',
         'district',
-        'salaryPerDay' // ✅ Added here
+        'salaryPerDay'
       ],
       order: [['rating', 'DESC']],
       limit: 5
