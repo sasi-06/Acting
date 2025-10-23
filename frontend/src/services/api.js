@@ -45,68 +45,72 @@ api.interceptors.response.use(
 
 // ================= DRIVER API =================
 export const driverAPI = {
-  // Authentication
   login: (credentials) => api.post('/driver/login', credentials),
   register: (driverData) => api.post('/driver/register', driverData),
 
-  // Profile
   getProfile: () => api.get('/driver/profile'),
   updateProfile: (profileData) => api.put('/driver/profile', profileData),
 
-  // Bookings (match backend: /bookings/driver)
   getBookings: () => api.get('/bookings/driver'),
   acceptBooking: (bookingId) => api.put(`/bookings/driver/${bookingId}/accept`),
   rejectBooking: (bookingId) => api.put(`/bookings/driver/${bookingId}/reject`),
 
-  // Availability
   updateAvailability: (availability) => api.put('/driver/availability', { availability }),
 };
 
 // ================= USER API =================
 export const userAPI = {
-  // Authentication
   login: (credentials) => api.post('/user/login', credentials),
   register: (userData) => api.post('/user/register', userData),
 
-  // Profile
   getProfile: () => api.get('/user/profile'),
   updateProfile: (profileData) => api.put('/user/profile', profileData),
 
-  // Dashboard (make sure you implement these in backend)
   getDashboard: () => api.get('/user/dashboard'),
   getRecentBookings: () => api.get('/user/recent-bookings'),
   getRecommendedDrivers: () => api.get('/user/recommended-drivers'),
 
-  // Bookings (match backend: /bookings)
-  getBookings: () => api.get('/user/bookings'), // you should add this route in backend
+  getBookings: () => api.get('/user/bookings'),
   createBooking: (bookingData) => api.post('/bookings', bookingData),
   cancelBooking: (bookingId) => api.put(`/bookings/${bookingId}/cancel`),
 
-  // Driver search
+  // ================= FIXED Quick Booking =================
+  createQuickBooking: (bookingData) => {
+    // Use frontend date if available, otherwise default to now
+    const tripStart = bookingData.tripStart || new Date();
+    // Default trip end: +2 hours after start
+    const tripEnd = bookingData.tripEnd || new Date(new Date(tripStart).getTime() + 2 * 60 * 60 * 1000);
+
+    const formattedData = {
+      pickupLocation: bookingData.pickupLocation || 'Not specified',
+      dropLocation: bookingData.dropLocation || 'Not specified',
+      tripStartDateTime: tripStart,
+      tripEndDateTime: tripEnd,
+      vehicleType: bookingData.vehicleType || 'Car',
+    };
+
+    return api.post('/user/quick-booking', formattedData);
+  },
+
   searchDrivers: (searchParams) => api.get('/user/drivers/search', { params: searchParams }),
 };
 
 // ================= ADMIN API =================
 export const adminAPI = {
-  // Authentication
   login: (credentials) => api.post('/admin/login', credentials),
-
-  // Dashboard
   getStats: () => api.get('/admin/stats'),
 
-  // Users
   getUsers: () => api.get('/admin/users'),
   updateUser: (userId, userData) => api.put(`/admin/users/${userId}`, userData),
 
-  // Drivers
   getDrivers: () => api.get('/admin/drivers'),
   updateDriver: (driverId, driverData) => api.put(`/admin/drivers/${driverId}`, driverData),
 
-  // Bookings (match backend: /bookings/admin/all)
   getBookings: () => api.get('/bookings/admin/all'),
   updateBooking: (bookingId, action) => api.put(`/bookings/admin/${bookingId}/${action}`),
 };
 
+// Separate registerUser export
 export const registerUser = (data) =>
   axios.post('http://127.0.0.1:5001/api/user/register', data);
 

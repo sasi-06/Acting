@@ -16,22 +16,23 @@ const UserDashboard = ({ user, showNotification = (msg, type) => alert(msg) }) =
   const [recommendedDrivers, setRecommendedDrivers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [weatherInfo, setWeatherInfo] = useState(null);
+
   const [quickBookingData, setQuickBookingData] = useState({
     pickupLocation: '',
     dropLocation: '',
     tripDate: '',
+    dropDate: '',
     vehicleType: ''
   });
 
-  // ✅ fetch user profile + dashboard info
+  // ✅ Fetch user profile + dashboard info
   useEffect(() => {
-
     const fetchProfile = async () => {
       try {
         const response = await userAPI.getProfile();
         setProfile(response.data);
       } catch (err) {
-        showNotification(err.message, "error");
+        showNotification(err.message || 'Failed to fetch user profile', 'error');
       }
     };
 
@@ -41,11 +42,11 @@ const UserDashboard = ({ user, showNotification = (msg, type) => alert(msg) }) =
     fetchRecommendedDrivers();
   }, [user]);
 
-  // ✅ Fetch dashboard stats (using bookings data)
+  // ✅ Fetch dashboard stats
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const response = await userAPI.getBookings(); // 🔑 use existing backend route
+      const response = await userAPI.getBookings();
       const bookings = response.data || [];
 
       const completed = bookings.filter(b => b.status === 'Completed');
@@ -56,44 +57,70 @@ const UserDashboard = ({ user, showNotification = (msg, type) => alert(msg) }) =
         activeBookings: active.length,
         completedBookings: completed.length,
         totalSpent: bookings.reduce((sum, b) => sum + (b.amount || 0), 0),
-        favoriteDrivers: 0 // can enhance later
+        favoriteDrivers: 0
       });
     } catch (err) {
-      showNotification(err.message, "error");
+      showNotification(err.message || 'Error loading dashboard stats', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ Fetch recent bookings (just show last 5 bookings)
+  // ✅ Fetch recent bookings
   const fetchRecentBookings = async () => {
     try {
-      const response = await userAPI.getBookings(); // 🔑 reusing same
+      const response = await userAPI.getBookings();
       const bookings = response.data || [];
       setRecentBookings(bookings.slice(0, 5));
     } catch (err) {
-      showNotification(err.message, "error");
+      showNotification(err.message || 'Failed to load bookings', 'error');
     }
   };
 
-  // ✅ Fetch recommended drivers (placeholder for now)
+  // ✅ Fetch recommended drivers
   const fetchRecommendedDrivers = async () => {
     try {
-      // If backend route exists, call it. Otherwise, just mock empty array.
-      const response = await userAPI.searchDrivers({}); 
+      const response = await userAPI.getRecommendedDrivers();
       setRecommendedDrivers(response.data || []);
     } catch (err) {
-      // not critical, so just show empty
       setRecommendedDrivers([]);
     }
   };
 
-  const handleQuickBooking = () => {
-    if (!quickBookingData.pickupLocation || !quickBookingData.dropLocation) {
-      showNotification('Please fill pickup and drop locations', 'warning');
+  // ✅ Handle quick booking
+  const handleQuickBooking = async () => {
+    const { pickupLocation, dropLocation, tripDate, dropDate, vehicleType } = quickBookingData;
+
+    if (!pickupLocation || !dropLocation || !tripDate || !dropDate || !vehicleType) {
+      showNotification('Please fill all booking details including drop date.', 'warning');
       return;
     }
-    showNotification('Redirecting to driver search...', 'info');
+
+    try {
+      const payload = {
+        pickupLocation,
+        dropLocation,
+        tripStart: new Date(tripDate).toISOString(), // ✅ updated field name
+        tripEnd: new Date(dropDate).toISOString(),   // ✅ updated field name
+        vehicleType
+      };
+
+      const response = await userAPI.createQuickBooking(payload);
+      showNotification(response.data?.message || 'Booking created successfully!', 'success');
+
+      setQuickBookingData({
+        pickupLocation: '',
+        dropLocation: '',
+        tripDate: '',
+        dropDate: '',
+        vehicleType: ''
+      });
+
+      fetchDashboardData();
+      fetchRecentBookings();
+    } catch (err) {
+      showNotification(err.message || 'Failed to create booking', 'error');
+    }
   };
 
   if (!profile) return <p>Loading user profile...</p>;
@@ -101,6 +128,7 @@ const UserDashboard = ({ user, showNotification = (msg, type) => alert(msg) }) =
   return (
     <div className="user-dashboard">
       <div className="container">
+
         {/* Header */}
         <div className="dashboard-header">
           <div className="welcome-text">
@@ -142,6 +170,12 @@ const UserDashboard = ({ user, showNotification = (msg, type) => alert(msg) }) =
               value={quickBookingData.tripDate}
               onChange={(e) => setQuickBookingData(prev => ({ ...prev, tripDate: e.target.value }))}
               min={new Date().toISOString().split('T')[0]}
+            />
+            <input
+              type="date"
+              value={quickBookingData.dropDate}
+              onChange={(e) => setQuickBookingData(prev => ({ ...prev, dropDate: e.target.value }))}
+              min={quickBookingData.tripDate || new Date().toISOString().split('T')[0]}
             />
             <select
               value={quickBookingData.vehicleType}
@@ -195,40 +229,57 @@ const UserDashboard = ({ user, showNotification = (msg, type) => alert(msg) }) =
           </div>
         </div>
 
-        {/* ✅ Recent Bookings */}
+        {/* Recent Bookings */}
         <div className="recent-bookings">
           <h3>🕒 Recent Bookings</h3>
           {recentBookings.length === 0 ? (
             <p>No recent bookings found.</p>
           ) : (
             <ul>
-              {recentBookings.map((booking, index) => (
-                <li key={index}>
-                  <strong>{booking.pickupLocation} → {booking.dropLocation}</strong>  
-                  <span> ({new Date(booking.tripStartDateTime).toLocaleDateString()})</span>
-                </li>
-              ))}
+              {recentBookings.map((booking, index) => {
+                const startDate = booking.tripStart ? new Date(booking.tripStart) : null;
+                const endDate = booking.tripEnd ? new Date(booking.tripEnd) : null;
+
+                return (
+                  <li key={index}>
+                    <div>
+                      <strong>{booking.pickupLocation || 'Not specified'} → {booking.dropLocation || 'Not specified'}</strong>
+                      {booking.status && <span className="booking-status">{booking.status}</span>}
+                    </div>
+                    <span>
+                      ({startDate && !isNaN(startDate) ? startDate.toLocaleDateString() : 'Invalid Date'}
+                      {endDate && !isNaN(endDate) ? ` - ${endDate.toLocaleDateString()}` : ''})
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
 
-        {/* ✅ Recommended Drivers */}
+        {/* Recommended Drivers */}
         <div className="recommended-drivers">
           <h3>⭐ Recommended Drivers</h3>
           {recommendedDrivers.length === 0 ? (
             <p>No recommendations right now.</p>
           ) : (
-            <ul>
+            <div className="drivers-grid">
               {recommendedDrivers.map((driver, index) => (
-                <li key={index}>
-                  <strong>{driver.name}</strong> - {driver.vehicleType} 🚗  
-                  <span> (Rating: {driver.rating}/5)</span>
-                </li>
+                <div className="driver-card" key={index}>
+                  <div className="driver-header">
+                    <h4>{driver.name}</h4>
+                    <span className="rating">⭐ {driver.rating}/5</span>
+                  </div>
+                  <p><strong>Experience:</strong> {driver.yearsOfExperience} yrs</p>
+                  <p><strong>Specialization:</strong> {driver.specialization}</p>
+                  <p><strong>District:</strong> {driver.district}</p>
+                  <p><strong>Salary per Day:</strong> ₹{driver.salaryPerDay ? driver.salaryPerDay : 'N/A'}</p>
+                  <button className="book-btn">Book Now</button>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
         </div>
-
       </div>
     </div>
   );
