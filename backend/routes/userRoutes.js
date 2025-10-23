@@ -68,6 +68,9 @@ router.get('/bookings', async (req, res) => {
 // ✅ Cancel Booking
 router.put('/bookings/:bookingId/cancel', bookingController.updateBookingStatus);
 
+// 🔥 NEW: Quick Booking Route (creates bookings for drivers 1,3,4,7)
+router.post('/quick-booking', userController.createQuickBooking);
+
 // -------------------- DASHBOARD & INSIGHTS --------------------
 
 // ✅ Dashboard Stats
@@ -78,5 +81,8 @@ router.get('/recent-bookings', userController.getRecentBookings);
 
 // ✅ Recommended Drivers
 router.get('/recommended-drivers', userController.getRecommendedDrivers);
+
+// ✅ 🔥 Search Drivers (for frontend filtering)
+router.get('/drivers/search', userController.searchDrivers);
 
 module.exports = router;

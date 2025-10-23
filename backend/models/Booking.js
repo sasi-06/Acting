@@ -37,13 +37,13 @@ const Booking = sequelize.define('Booking', {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  tripStart: {   // ✅ renamed to match frontend
+  tripStart: {
     type: DataTypes.DATE,
     allowNull: false,
   },
-  tripEnd: {     // ✅ renamed to match frontend
+  tripEnd: {
     type: DataTypes.DATE,
-    allowNull: false,
+    allowNull: true, // ✅ made optional for initial booking
   },
 
   // Booking details
@@ -55,11 +55,25 @@ const Booking = sequelize.define('Booking', {
   amount: {
     type: DataTypes.FLOAT,
     allowNull: true,
+    defaultValue: 0,
   },
   specialRequests: {
     type: DataTypes.TEXT,
     allowNull: true,
   },
+
+  // ✅ Added missing fields (used in frontend & controller)
+  fare: {
+    type: DataTypes.FLOAT,
+    allowNull: true,
+    defaultValue: 0,
+  },
+  paymentStatus: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    defaultValue: 'Unpaid', // Unpaid, Paid, Refunded
+  },
+
 }, {
   tableName: 'bookings',
   timestamps: true, // Sequelize will auto-add createdAt & updatedAt
