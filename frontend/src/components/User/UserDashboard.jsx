@@ -66,22 +66,39 @@ const UserDashboard = ({ user, showNotification = (msg, type) => alert(msg) }) =
     }
   };
 
-  // ✅ Fetch recent bookings
+  // ✅ Fetch recent bookings (remove duplicates + fix invalid date)
   const fetchRecentBookings = async () => {
     try {
       const response = await userAPI.getBookings();
       const bookings = response.data || [];
-      setRecentBookings(bookings.slice(0, 5));
+
+      // Remove duplicates based on pickup/drop/start
+      const uniqueBookings = bookings.filter(
+        (v, i, a) =>
+          a.findIndex(
+            t =>
+              t.pickupLocation === v.pickupLocation &&
+              t.dropLocation === v.dropLocation &&
+              t.tripStart === v.tripStart
+          ) === i
+      );
+
+      setRecentBookings(uniqueBookings.slice(0, 5));
     } catch (err) {
       showNotification(err.message || 'Failed to load bookings', 'error');
     }
   };
 
-  // ✅ Fetch recommended drivers
+  // ✅ Fetch recommended drivers (ensure salary shows)
   const fetchRecommendedDrivers = async () => {
     try {
       const response = await userAPI.getRecommendedDrivers();
-      setRecommendedDrivers(response.data || []);
+      const data = response.data || [];
+      const validDrivers = data.map(d => ({
+        ...d,
+        salaryPerDay: d.salaryPerDay || 0,
+      }));
+      setRecommendedDrivers(validDrivers);
     } catch (err) {
       setRecommendedDrivers([]);
     }
@@ -89,39 +106,39 @@ const UserDashboard = ({ user, showNotification = (msg, type) => alert(msg) }) =
 
   // ✅ Handle quick booking
   const handleQuickBooking = async () => {
-    const { pickupLocation, dropLocation, tripDate, dropDate, vehicleType } = quickBookingData;
+  const { pickupLocation, dropLocation, tripDate, dropDate, vehicleType } = quickBookingData;
 
-    if (!pickupLocation || !dropLocation || !tripDate || !dropDate || !vehicleType) {
-      showNotification('Please fill all booking details including drop date.', 'warning');
-      return;
-    }
+  if (!pickupLocation || !dropLocation || !tripDate || !dropDate || !vehicleType) {
+    showNotification('Please fill all booking details including drop date.', 'warning');
+    return;
+  }
 
-    try {
-      const payload = {
-        pickupLocation,
-        dropLocation,
-        tripStart: new Date(tripDate).toISOString(), // ✅ updated field name
-        tripEnd: new Date(dropDate).toISOString(),   // ✅ updated field name
-        vehicleType
-      };
+  try {
+    const payload = {
+      pickupLocation,
+      dropLocation,
+      tripStartDateTime: new Date(tripDate).toISOString(),  // ✅ backend expects this
+      tripEndDateTime: new Date(dropDate).toISOString(),    // ✅ backend expects this
+      vehicleType
+    };
 
-      const response = await userAPI.createQuickBooking(payload);
-      showNotification(response.data?.message || 'Booking created successfully!', 'success');
+    const response = await userAPI.createQuickBooking(payload);
+    showNotification(response.data?.message || 'Booking created successfully!', 'success');
 
-      setQuickBookingData({
-        pickupLocation: '',
-        dropLocation: '',
-        tripDate: '',
-        dropDate: '',
-        vehicleType: ''
-      });
+    setQuickBookingData({
+      pickupLocation: '',
+      dropLocation: '',
+      tripDate: '',
+      dropDate: '',
+      vehicleType: ''
+    });
 
-      fetchDashboardData();
-      fetchRecentBookings();
-    } catch (err) {
-      showNotification(err.message || 'Failed to create booking', 'error');
-    }
-  };
+    fetchDashboardData();
+    fetchRecentBookings();
+  } catch (err) {
+    showNotification(err.response?.data?.message || 'Failed to create booking', 'error');
+  }
+};
 
   if (!profile) return <p>Loading user profile...</p>;
 
@@ -247,8 +264,10 @@ const UserDashboard = ({ user, showNotification = (msg, type) => alert(msg) }) =
                       {booking.status && <span className="booking-status">{booking.status}</span>}
                     </div>
                     <span>
-                      ({startDate && !isNaN(startDate) ? startDate.toLocaleDateString() : 'Invalid Date'}
-                      {endDate && !isNaN(endDate) ? ` - ${endDate.toLocaleDateString()}` : ''})
+                      (
+                      {startDate && !isNaN(startDate.getTime()) ? startDate.toLocaleDateString() : 'Invalid Date'}
+                      {endDate && !isNaN(endDate.getTime()) ? ` - ${endDate.toLocaleDateString()}` : ''}
+                      )
                     </span>
                   </li>
                 );
@@ -271,9 +290,9 @@ const UserDashboard = ({ user, showNotification = (msg, type) => alert(msg) }) =
                     <span className="rating">⭐ {driver.rating}/5</span>
                   </div>
                   <p><strong>Experience:</strong> {driver.yearsOfExperience} yrs</p>
-                  <p><strong>Specialization:</strong> {driver.specialization}</p>
+                  <p><strong>Specialization:</strong> {driver.specialization || 'N/A'}</p>
                   <p><strong>District:</strong> {driver.district}</p>
-                  <p><strong>Salary per Day:</strong> ₹{driver.salaryPerDay ? driver.salaryPerDay : 'N/A'}</p>
+                  <p><strong>Salary per Day:</strong> ₹{driver.salaryPerDay || 'N/A'}</p>
                   <button className="book-btn">Book Now</button>
                 </div>
               ))}
